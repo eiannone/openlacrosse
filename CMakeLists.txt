@@ -9,13 +9,13 @@ ENDIF()
 
 SET(CMAKE_CXX_FLAGS "-std=c++0x")
 
-add_library(auxiliary auxiliary.h auxiliary.cpp)
+add_library(auxiliary src/auxiliary.h src/auxiliary.cpp)
 
-add_library(serialinterface serialinterface.h serialinterface.cpp)
+add_library(serialinterface src/serialinterface.h src/serialinterface.cpp)
 target_link_libraries(serialinterface auxiliary)
 
-add_library(ws8610 ws8610.h ws8610.cpp)
+add_library(ws8610 src/ws8610.h src/ws8610.cpp)
 target_link_libraries(ws8610 auxiliary serialinterface)
 
-add_executable(main main.cpp)
+add_executable(main src/main.cpp)
 target_link_libraries(main ws8610)
