@@ -27,8 +27,8 @@ WS8610::WS8610(const std::string& portname) : _iface(portname)
         buffer[i] = 'U';
     _iface.write_device(buffer, 448);
 
-    _iface.set_DTR(0);
-    _iface.set_RTS(0);
+    _iface.set_DTR(false);
+    _iface.set_RTS(false);
 
     int i = 0;
     do {
@@ -44,8 +44,8 @@ WS8610::WS8610(const std::string& portname) : _iface(portname)
         i++;
     } while (i < INIT_WAIT && _iface.get_DSR());
     if (i != INIT_WAIT) {
-        _iface.set_RTS(1);
-        _iface.set_DTR(1);
+        _iface.set_RTS(true);
+        _iface.set_DTR(true);
     } else {
         throw ProtocolException("Connection timeout (did not clear DSR)");
     }
@@ -54,7 +54,7 @@ WS8610::WS8610(const std::string& portname) : _iface(portname)
 
     // Configure communication properties dependant on
     // the amount of external sensors
-    _external_sensors = GetExternalSensors();
+    _external_sensors = external_sensors();
     switch (_external_sensors) {
         case 1:
             _record_size = 10;
@@ -71,59 +71,30 @@ WS8610::WS8610(const std::string& portname) : _iface(portname)
     _max_records = HISTORY_BUFFER_SIZE / _record_size;
 }
 
-std::vector<uint8_t> WS8610::read_safe(short address, int uint8_ts_to_read)
+//
+// Station properties
+//
+
+uint8_t WS8610::external_sensors()
 {
-    //unsigned char readdata2[32768];
-    clog(trace) << "read_safe" << std::endl;
-    std::vector<uint8_t> readdata, readdata2;
-    int j;
-    for (j = 0; j < MAX_READ_RETRIES; j++)
-    {
-        _iface.start_sequence();
-        readdata = _iface.read_data(address, uint8_ts_to_read);
-        _iface.start_sequence();
-        readdata2 = _iface.read_data(address, uint8_ts_to_read);
-        if (readdata.size() == 0 || readdata != readdata2)
-        {
-            clog(debug) << "read_safe - two readings not identical" << std::endl;
-            continue;
-        }
-        //check if only 0's for reading memory range greater then 10 uint8_ts
-        clog(debug) << "read_safe - two readings identical" << std::endl;
-        int i = 0;
-        if (uint8_ts_to_read > 10)
-            for (; readdata[i] == 0 && i < uint8_ts_to_read; i++)
-            { }
-
-        if (i != uint8_ts_to_read)
-            break;
-        clog(debug) << "read_safe - only zeros" << std::endl;
-    }
-    // If we have tried MAX_READ_RETRIES times to read we expect not to have valid data
-    if (j == MAX_READ_RETRIES)
-        throw ProtocolException("Safe read failed");
-
-    return readdata;
+    std::vector<byte> data = read_safe(0x0C, 1);
+    if (data.size() == 0)
+        throw ProtocolException("Invalid external sensor count");
+    return data[0] & 0x0F;
 }
 
-std::vector<uint8_t> WS8610::DumpMemory(short start_addr, short num_uint8_ts)
-{
-    short end_addr = start_addr + num_uint8_ts - 1;
-    if (start_addr < 0 || end_addr > 0x7FFF)
-    {
-        //throw "Invalid address range: " + hex(start_addr) + " - " + hex(end_addr));
-        throw ProtocolException("Invalid address range");
-    }
-    return read_safe(start_addr, num_uint8_ts);
-}
 
-WS8610::HistoryRecord WS8610::read_history_record(int record_no)
+//
+// History management
+//
+
+WS8610::HistoryRecord WS8610::history(int record_no)
 {
     while (record_no >= _max_records)
         record_no -= _max_records;
 
-    short addr = (short)(HISTORY_BASE_ADDR + record_no * _record_size);
-    std::vector<uint8_t> record = read_safe(addr, _record_size);
+    short addr = (short)(HISTORY_START_LOCATION + record_no * _record_size);
+    std::vector<byte> record = read_safe(addr, _record_size);
     if (record.size() != _record_size)
         throw ProtocolException("Invalid history data received");
 
@@ -141,35 +112,34 @@ WS8610::HistoryRecord WS8610::read_history_record(int record_no)
     int mday = (record[2] >> 4) * 10 + (record[2] & 0x0F);
     int mon = (record[3] >> 4) * 10 + (record[3] & 0x0F);
     int year = (record[4] >> 4) * 10 + (record[4] & 0x0F) + 2000;
-    ptime DateTime(date(year, mon, mday), hours(hour) + minutes(min));
+    ptime datetime(date(year, mon, mday), hours(hour) + minutes(min));
 
-    auto Temp = std::vector<double>(_external_sensors + 1);
-    Temp[0] = ((record[6] & 0x0F) * 10 + (record[5] >> 4) + (record[5] & 0x0F) / 10.0) - 30.0;
-    for (auto s = 1; s <= _external_sensors; s++)
-        Temp[s] = temperature_outdoor(record, s);
+    auto temperature = std::vector<double>(_external_sensors + 1);
+    for (auto s = 0; s <= _external_sensors; s++)
+        temperature[s] = parse_temperature(record, s);
 
-    auto Hum = std::vector<int>(_external_sensors + 1);
-    Hum[0] = (record[8] >> 4) * 10 + (record[8] & 0xF);
-    for (auto s = 1; s <= _external_sensors; s++)
-        Hum[s] = humidity_outdoot(record, s);
+    auto humidity = std::vector<int>(_external_sensors + 1);
+    for (auto s = 0; s <= _external_sensors; s++)
+        humidity[s] = parse_humidity(record, s);
 
-
-    HistoryRecord hr{DateTime, Temp, Hum};
+    HistoryRecord hr{datetime, temperature, humidity};
 
     return hr;
 }
 
-uint8_t WS8610::GetExternalSensors()
+/// <summary>
+/// Get number of history records stored in memory
+/// </summary>
+/// <returns>Number of history records stored in memory</returns>
+int WS8610::history_count()
 {
-    std::vector<uint8_t> data = read_safe(0x0C, 1);
-    if (data.size() == 0)
-        throw ProtocolException("Invalid external sensor count");
-    return data[0] & 0x0F;
+    auto b = read_safe(0x0009, 2);
+    return (b[0] >> 4) * 1000 + (b[1] & 0x0F) * 100 + (b[0] >> 4) * 10 + (b[0] & 0x0F);
 }
 
-ptime WS8610::GetLastRecordDateTime()
+ptime WS8610::history_modtime()
 {
-    std::vector<uint8_t> dt = read_safe(0x0000, 6);
+    std::vector<byte> dt = read_safe(0x0000, 6);
     if (dt.size() != 6)
         throw ProtocolException("Cannot obtain last recording date/time");
 
@@ -182,24 +152,24 @@ ptime WS8610::GetLastRecordDateTime()
     return ptime(date(year, month, day), hours(hour) + minutes(min));
 }
 
-WS8610::HistoryRecord WS8610::GetFirstHistoryRecord()
+WS8610::HistoryRecord WS8610::history_first()
 {
-    return read_history_record(0);
+    return history(0);
 }
 
-WS8610::HistoryRecord WS8610::GetLastHistoryRecord()
+WS8610::HistoryRecord WS8610::history_last()
 {
-    auto first_rec = read_history_record(0);
-    ptime dt_last = GetLastRecordDateTime();
-    time_duration difference = dt_last - first_rec.Datetime;
+    auto first_rec = history(0);
+    ptime dt_last = history_modtime();
+    time_duration difference = dt_last - first_rec.datetime;
     int tot_records = 1 + (60*difference.hours() + difference.minutes()) / 5;
 
     clog(debug) << "Tot history: " << tot_records << " records" << std::endl;
-    clog(debug) << "Date first: " << first_rec.Datetime << std::endl;
+    clog(debug) << "Date first: " << first_rec.datetime << std::endl;
     clog(debug) << "Date last: " << dt_last << std::endl;
 
     // Try to see if record (n+1) is valid
-    auto check = read_safe((short)(HISTORY_BASE_ADDR + (tot_records * _record_size)), 1);
+    auto check = read_safe((short)(HISTORY_START_LOCATION + (tot_records * _record_size)), 1);
 
     clog(debug) << "Next record start with " << std::hex << check[0] << std::endl;
     // If valid then read one record ahead
@@ -212,52 +182,99 @@ WS8610::HistoryRecord WS8610::GetLastHistoryRecord()
     {
         clog(debug) << "Seems invalid, stick with current record" << std::endl;
     }
-    return read_history_record(tot_records - 1);
-}
-
-
-
-/// <summary>
-/// Get number of history records stored in memory
-/// </summary>
-/// <returns>Number of history records stored in memory</returns>
-int WS8610::GetStoredHistoryCount()
-{
-    auto b = read_safe(0x0009, 2);
-    return (b[0] >> 4) * 1000 + (b[1] & 0x0F) * 100 + (b[0] >> 4) * 10 + (b[0] & 0x0F);
+    return history(tot_records - 1);
 }
 
 /// <summary>
 /// Reset 'mem' indicator to 0000. Next history data will be stored at position 0.
 /// </summary>
 /// <returns>true if success</returns>
-bool WS8610::ResetStoredHistoryCount()
+bool WS8610::history_reset()
 {
-    return _iface.WriteMemory(0x0009, std::vector<uint8_t>{0x00, 0x00});
+    return _iface.write_data(0x0009, std::vector<byte>{0x00, 0x00});
 }
 
-double WS8610::temperature_outdoor(std::vector<uint8_t> rec, int num)
+
+//
+// Auxiliary
+//
+
+std::vector<byte> WS8610::read_safe(address location, size_t length)
 {
-    switch (num)
+    //unsigned char readdata2[32768];
+    clog(trace) << "read_safe" << std::endl;
+    std::vector<byte> readdata, readdata2;
+    int j;
+    for (j = 0; j < MAX_READ_RETRIES; j++)
     {
+        _iface.start_sequence();
+        readdata = _iface.read_data(location, length);
+        _iface.start_sequence();
+        readdata2 = _iface.read_data(location, length);
+        if (readdata.size() == 0 || readdata != readdata2)
+        {
+            clog(debug) << "read_safe - two readings not identical" << std::endl;
+            continue;
+        }
+        //check if only 0's for reading memory range greater then 10 bytes
+        clog(debug) << "read_safe - two readings identical" << std::endl;
+        int i = 0;
+        if (length > 10)
+            for (; readdata[i] == 0 && i < length; i++)
+            { }
+
+        if (i != length)
+            break;
+        clog(debug) << "read_safe - only zeros" << std::endl;
+    }
+    // If we have tried MAX_READ_RETRIES times to read we expect not to have valid data
+    if (j == MAX_READ_RETRIES)
+        throw ProtocolException("Safe read failed");
+
+    return readdata;
+}
+
+std::vector<byte> WS8610::memory(address location, size_t length)
+{
+    address end_location = location + length - 1;
+    if (location < 0 || end_location > HISTORY_END_LOCATION)
+    {
+        //throw "Invalid address range: " + hex(address) + " - " + hex(end_addr));
+        throw ProtocolException("Invalid address range");
+    }
+    return read_safe(location, length);
+}
+
+double WS8610::parse_temperature(std::vector<byte> data, int sensor)
+{
+    switch (sensor)
+    {
+        case 0:
+            return ((data[6] & 0x0F) * 10 + (data[5] >> 4) + (data[5] & 0x0F) / 10.0) - 30.0;
+        case 1:
+            return ((data[7] & 0x0F) + (data[7] >> 4) * 10 + (data[6] >> 4) / 10.0) - 30.0;
         case 2:
-            return ((rec[11] & 0x0F) * 10 + (rec[10] >> 4) + (rec[10] & 0x0F) / 10.0) - 30.0;
+            return ((data[11] & 0x0F) * 10 + (data[10] >> 4) + (data[10] & 0x0F) / 10.0) - 30.0;
         case 3:
-            return ((rec[13] & 0x0F) + (rec[13] >> 4) * 10 + (rec[12] >> 4) / 10.0) - 30.0;
+            return ((data[13] & 0x0F) + (data[13] >> 4) * 10 + (data[12] >> 4) / 10.0) - 30.0;
         default:
-            return ((rec[7] & 0x0F) + (rec[7] >> 4) * 10 + (rec[6] >> 4) / 10.0) - 30.0;
+            throw ProtocolException("Invalid sensor");
     }
 }
 
-int WS8610::humidity_outdoot(std::vector<uint8_t> rec, int num)
+int WS8610::parse_humidity(std::vector<byte> data, int sensor)
 {
-    switch (num)
+    switch (sensor)
     {
+        case 0:
+            return (data[8] >> 4) * 10 + (data[8] & 0xF);
+        case 1:
+            return (data[9] >> 4) * 10 + (data[9] & 0x0F);
         case 2:
-            return (rec[11] >> 4) + (rec[12] & 0x0F) * 10;
+            return (data[11] >> 4) + (data[12] & 0x0F) * 10;
         case 3:
-            return (rec[14] >> 4) * 10 + (rec[14] & 0x0F);
+            return (data[14] >> 4) * 10 + (data[14] & 0x0F);
         default:
-            return (rec[9] >> 4) * 10 + (rec[9] & 0x0F);
+            throw ProtocolException("Invalid sensor");
     }
 }

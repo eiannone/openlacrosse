@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 2.6)
-project(openlacrosse)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+PROJECT(openlacrosse)
 
 FIND_PACKAGE(Boost)
 IF (Boost_FOUND)
@@ -9,13 +9,13 @@ ENDIF()
 
 SET(CMAKE_CXX_FLAGS "-std=c++0x")
 
-add_library(auxiliary src/auxiliary.h src/auxiliary.cpp)
+ADD_LIBRARY(auxiliary src/auxiliary.h src/auxiliary.cpp)
 
-add_library(serialinterface src/serialinterface.h src/serialinterface.cpp)
-target_link_libraries(serialinterface auxiliary)
+ADD_LIBRARY(serialinterface src/serialinterface.h src/serialinterface.cpp)
+TARGET_LINK_LIBRARIES(serialinterface auxiliary)
 
-add_library(ws8610 src/ws8610.h src/ws8610.cpp)
-target_link_libraries(ws8610 auxiliary serialinterface)
+ADD_LIBRARY(ws8610 src/ws8610.h src/ws8610.cpp)
+TARGET_LINK_LIBRARIES(ws8610 auxiliary serialinterface)
 
-add_executable(main src/main.cpp)
-target_link_libraries(main ws8610)
+ADD_EXECUTABLE(main src/main.cpp)
+TARGET_LINK_LIBRARIES(main ws8610)

@@ -21,8 +21,9 @@ using namespace boost::posix_time;
 // Configurable values
 #define INIT_WAIT 500
 #define MAX_READ_RETRIES 20
-const short HISTORY_BASE_ADDR = 0x0064;                        // Starting address where history data is stored
-const short HISTORY_BUFFER_SIZE = 0x7FFF - HISTORY_BASE_ADDR;   // Size of history buffer, in bytes
+const address HISTORY_START_LOCATION = 0x0064;                        // Starting address where history data is stored
+const address HISTORY_END_LOCATION = 0x7FFF;
+const address HISTORY_BUFFER_SIZE = HISTORY_END_LOCATION - HISTORY_START_LOCATION;   // Size of history buffer, in bytes
 
 
 //
@@ -42,25 +43,30 @@ public:
     // Subclasses
     struct HistoryRecord
     {
-        ptime Datetime;
-        std::vector<double> Temp;
-        std::vector<int> Hum;
+        ptime datetime;
+        std::vector<double> temperature;
+        std::vector<int> humidity;
     };
 
     // Construction and destruction
     WS8610(const std::string& portname);
 
-    std::vector<uint8_t> read_safe(short address, int uint8_ts_to_read);
-    std::vector<uint8_t> DumpMemory(short start_addr, short num_uint8_ts);
-    HistoryRecord read_history_record(int record_no);
-    uint8_t GetExternalSensors();
-    ptime GetLastRecordDateTime();
-    HistoryRecord GetFirstHistoryRecord();
-    HistoryRecord GetLastHistoryRecord();
-    int GetStoredHistoryCount();
-    bool ResetStoredHistoryCount();
-    double temperature_outdoor(std::vector<uint8_t> rec, int num);
-    int humidity_outdoot(std::vector<uint8_t> rec, int num);
+    // Station properties
+    uint8_t external_sensors();
+
+    // History management
+    HistoryRecord history(int record_no);
+    int history_count();
+    ptime history_modtime();
+    HistoryRecord history_first();
+    HistoryRecord history_last();
+    bool history_reset();
+
+    // Auxiliary
+    std::vector<byte> read_safe(address location, size_t length);
+    std::vector<byte> memory(address location, size_t length);
+    static double parse_temperature(std::vector<byte> data, int sensor);
+    static int parse_humidity(std::vector<byte> data, int sensor);
 
 private:
     SerialInterface _iface;

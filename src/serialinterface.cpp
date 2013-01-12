@@ -86,12 +86,17 @@ SerialInterface::~SerialInterface()
     close(_sp);
 }
 
-void SerialInterface::set_DTR(bool val)
+
+//
+// Low-level port interface
+// 
+
+void SerialInterface::set_DTR(bool value)
 {
     // TODO: use TIOCMBIC and TIOCMBIS instead of TIOCMGET and TIOCMSET
     int portstatus;
     ioctl(_sp, TIOCMGET, &portstatus);   // get current port status
-    if (val)
+    if (value)
     {
         clog(trace) << "Set DTR" << std::endl;
         portstatus |= TIOCM_DTR;
@@ -103,18 +108,18 @@ void SerialInterface::set_DTR(bool val)
     }
     ioctl(_sp, TIOCMSET, &portstatus);   // set current port status
 
-    /*if (val)
+    /*if (value)
       ioctl(_sp, TIOCMBIS, TIOCM_DTR);
     else
       ioctl(_sp, TIOCMBIC, TIOCM_DTR);*/
 }
 
-void SerialInterface::set_RTS(bool val)
+void SerialInterface::set_RTS(bool value)
 {
     //TODO: use TIOCMBIC and TIOCMBIS instead of TIOCMGET and TIOCMSET
     int portstatus;
     ioctl(_sp, TIOCMGET, &portstatus);   // get current port status
-    if (val)
+    if (value)
     {
         clog(trace) << "Set RTS" << std::endl;
         portstatus |= TIOCM_RTS;
@@ -126,7 +131,7 @@ void SerialInterface::set_RTS(bool val)
     }
     ioctl(_sp, TIOCMSET, &portstatus);   // set current port status
 
-    /*if (val)
+    /*if (value)
       ioctl(_sp, TIOCMBIS, TIOCM_RTS);
     else
       ioctl(_sp, TIOCMBIC, TIOCM_RTS);
@@ -168,30 +173,30 @@ bool SerialInterface::get_CTS()
     }
 }
 
-int SerialInterface::read_device(unsigned char *buffer, int size)
+int SerialInterface::read_device(unsigned char *data, size_t length)
 {
     int ret;
 
     for (;;) {
-        ret = read(_sp, buffer, size);
+        ret = read(_sp, data, length);
         if (ret == 0 && errno == EINTR)
             continue;
         return ret;
     }
 }
 
-int SerialInterface::write_device(unsigned char *buffer, int size)
+int SerialInterface::write_device(unsigned char *data, size_t length)
 {
-    int ret = write(_sp, buffer, size);
+    int ret = write(_sp, data, length);
     return ret;
 }
 
-void SerialInterface::nanodelay()
-{
-    usleep(4);
-}
 
-uint8_t SerialInterface::read_bit()
+//
+// Bit-level I/O operations
+// 
+
+byte SerialInterface::read_bit()
 {
     clog(trace) << "Read bit ..." << std::endl;
     set_DTR(false);
@@ -202,7 +207,7 @@ uint8_t SerialInterface::read_bit()
     nanodelay();
     clog(trace) << "Bit = " << (status ? "0" : "1") << std::endl;
 
-    return (uint8_t)(status ? 0 : 1);
+    return (byte)(status ? 0 : 1);
 }
 
 void SerialInterface::write_bit(bool bit)
@@ -215,10 +220,15 @@ void SerialInterface::write_bit(bool bit)
     set_DTR(true);
 }
 
-uint8_t SerialInterface::read_uint8_t()
+
+//
+// Byte-level I/O operations
+// 
+
+byte SerialInterface::read_byte()
 {
     clog(trace) << "Read byte ..." << std::endl;
-    uint8_t b = 0;
+    byte b = 0;
     for (size_t i = 0; i < 8; i++)
     {
         b *= 2;
@@ -228,19 +238,19 @@ uint8_t SerialInterface::read_uint8_t()
     return b;
 }
 
-bool SerialInterface::send_uint8_t(uint8_t b, bool checkvalue)
+bool SerialInterface::write_byte(byte value, bool verify)
 {
-    clog(trace) << "Send byte 0x" << std::hex << b << std::endl;
+    clog(trace) << "Send byte 0x" << std::hex << value << std::endl;
 
     for (size_t i = 0; i < 8; i++)
     {
-        write_bit((b & 0x80) > 0);
-        b <<= 1;
+        write_bit((value & 0x80) > 0);
+        value <<= 1;
     }
     set_RTS(false);
     nanodelay();
     bool status = true;
-    if (checkvalue)
+    if (verify)
     {
         status = get_CTS();
         //TODO: checking value of status, error routine
@@ -266,7 +276,57 @@ void SerialInterface::read_next()
     nanodelay();
 }
 
-bool SerialInterface::send_command(uint8_t cmd, bool checkvalue)
+
+//
+// Generic I/O operations
+//
+
+std::vector<byte> SerialInterface::read_data(address location, size_t length)
+{
+    if (!query_address(location) || !send_command(0xA1))
+        return std::vector<byte>(); // TODO: error?
+
+    std::vector<byte> readdata(length);
+    readdata[0] = read_byte();
+    for (size_t i = 1; i < length; i++)
+    {
+        read_next();
+        readdata[i] = read_byte();
+    }
+    end_command();
+
+    return readdata;
+}
+
+bool SerialInterface::write_data(address location, const std::vector<byte> &data)
+{
+    start_sequence();
+    if (!query_address(location))
+        return false;
+    for (size_t i = 0; i < data.size(); i++)
+        if (!write_byte(data[i]))
+            return false;
+    end_command();
+
+    start_sequence();
+    for (size_t i = 0; i < 3; i++) 
+        send_command(0xA0, false);
+
+    set_DTR(false);
+    nanodelay();
+    bool result = get_CTS();
+    set_DTR(true);
+    nanodelay();
+
+    return result;
+}
+
+
+//
+// Command interface
+//
+
+bool SerialInterface::send_command(byte command, bool verify)
 {
     set_DTR(false);
     nanodelay();
@@ -279,7 +339,7 @@ bool SerialInterface::send_command(uint8_t cmd, bool checkvalue)
     set_RTS(false);
     nanodelay();
 
-    return send_uint8_t(cmd, checkvalue);
+    return write_byte(command, verify);
 }
 
 void SerialInterface::start_sequence()
@@ -302,47 +362,19 @@ void SerialInterface::end_command()
     nanodelay();
 }
 
-bool SerialInterface::query_address(short address)
+
+//
+// Auxiliary
+// 
+
+void SerialInterface::nanodelay()
 {
-    return send_command(0xA0) && send_uint8_t((uint8_t)(address / 256)) && send_uint8_t((uint8_t)(address % 256));
+    usleep(4);
 }
 
-std::vector<uint8_t> SerialInterface::read_data(short address, int uint8_ts_to_read)
+bool SerialInterface::query_address(address location)
 {
-    if (!query_address(address) || !send_command(0xA1))
-        return std::vector<uint8_t>();
-
-    std::vector<uint8_t> readdata(uint8_ts_to_read);
-    readdata[0] = read_uint8_t();
-    for (size_t i = 1; i < uint8_ts_to_read; i++)
-    {
-        read_next();
-        readdata[i] = read_uint8_t();
-    }
-    end_command();
-
-    return readdata;
-}
-
-bool SerialInterface::WriteMemory(short start_addr, std::vector<uint8_t> bytes_to_write)
-{
-    start_sequence();
-    if (!query_address(start_addr))
-        return false;
-    for (size_t i = 0; i < bytes_to_write.size(); i++)
-        if (!send_uint8_t(bytes_to_write[i]))
-            return false;
-    end_command();
-
-    start_sequence();
-    for (size_t i = 0; i < 3; i++) 
-        send_command(0xA0, false);
-
-    set_DTR(false);
-    nanodelay();
-    bool result = get_CTS();
-    set_DTR(true);
-    nanodelay();
-
-    return result;
+    return send_command(0xA0)
+        && write_byte((uint8_t)(location / 256))
+        && write_byte((uint8_t)(location % 256));
 }
