@@ -91,6 +91,10 @@ SerialInterface::~SerialInterface()
 // Low-level port interface
 // 
 
+/**
+ * Control the Data Terminal Ready line.
+ * @param value Status to set the line to.
+ */
 void SerialInterface::set_DTR(bool value)
 {
     // TODO: use TIOCMBIC and TIOCMBIS instead of TIOCMGET and TIOCMSET
@@ -114,6 +118,10 @@ void SerialInterface::set_DTR(bool value)
       ioctl(_sp, TIOCMBIC, TIOCM_DTR);*/
 }
 
+/**
+ * Control the Request To Send line.
+ * @param value Status to set the line to.
+ */
 void SerialInterface::set_RTS(bool value)
 {
     //TODO: use TIOCMBIC and TIOCMBIS instead of TIOCMGET and TIOCMSET
@@ -139,6 +147,10 @@ void SerialInterface::set_RTS(bool value)
 
 }
 
+/**
+ * Get the status of the Data Set Ready line.
+ * @return Status of the line.
+ */
 bool SerialInterface::get_DSR()
 {
     int portstatus;
@@ -156,6 +168,10 @@ bool SerialInterface::get_DSR()
     }
 }
 
+/**
+ * Get the status of the Clear To Send line.
+ * @return Status of the line.
+ */
 bool SerialInterface::get_CTS()
 {
     int portstatus;
@@ -173,9 +189,15 @@ bool SerialInterface::get_CTS()
     }
 }
 
-int SerialInterface::read_device(unsigned char *data, size_t length)
+/**
+ * Read data from the serial line in the usual manner.
+ * @param  data   Pointer to the buffer to write to.
+ * @param  length Number of bytes to read.
+ * @return        Numbers of bytes read.
+ */
+size_t SerialInterface::read_device(unsigned char *data, size_t length)
 {
-    int ret;
+    size_t ret;
 
     for (;;) {
         ret = read(_sp, data, length);
@@ -185,10 +207,49 @@ int SerialInterface::read_device(unsigned char *data, size_t length)
     }
 }
 
-int SerialInterface::write_device(const unsigned char *data, size_t length)
+/**
+ * Write data over the serial line in the usual manner.
+ * @param  data   Pointer to the buffer to read from.
+ * @param  length Number of bytes to write.
+ * @return        Number of bytes written.
+ */
+size_t SerialInterface::write_device(const unsigned char *data, size_t length)
 {
-    int ret = write(_sp, data, length);
+    size_t ret = write(_sp, data, length);
     return ret;
+}
+
+
+//
+// Addressing operations
+//
+
+/**
+ * Request access to a location to read or write to.
+ * @param  location The requested location.
+ * @return          Status whether the request is valid and permitted.
+ */
+bool SerialInterface::request(address location)
+{
+    return send_command(0xA0)
+        && write_byte((uint8_t)(location / 256))
+        && write_byte((uint8_t)(location % 256));
+}
+
+/**
+ * Advance to the next byte.
+ */
+void SerialInterface::request_next()
+{
+    clog(debug) << "request_next_byte_seq" << std::endl;
+    set_RTS(true);
+    nanodelay();
+    set_DTR(false);
+    nanodelay();
+    set_DTR(true);
+    nanodelay();
+    set_RTS(false);
+    nanodelay();
 }
 
 
@@ -196,6 +257,10 @@ int SerialInterface::write_device(const unsigned char *data, size_t length)
 // Bit-level I/O operations
 // 
 
+/**
+ * Read one bit.
+ * @return Bit read.
+ */
 byte SerialInterface::read_bit()
 {
     clog(trace) << "Read bit ..." << std::endl;
@@ -210,6 +275,10 @@ byte SerialInterface::read_bit()
     return (byte)(status ? 0 : 1);
 }
 
+/**
+ * Write one bit.
+ * @param bit Bit to write.
+ */
 void SerialInterface::write_bit(bool bit)
 {
     clog(trace) << "Write bit " << (bit ? "1" : "0") << std::endl;
@@ -225,6 +294,10 @@ void SerialInterface::write_bit(bool bit)
 // Byte-level I/O operations
 // 
 
+/**
+ * Read one byte.
+ * @return Byte read.
+ */
 byte SerialInterface::read_byte()
 {
     clog(trace) << "Read byte ..." << std::endl;
@@ -238,6 +311,12 @@ byte SerialInterface::read_byte()
     return b;
 }
 
+/**
+ * Write one byte.
+ * @param value  Value to write.
+ * @param verify Whether the write has to be verified (default: true).
+ * @return       Whether the write was successful.
+ */
 bool SerialInterface::write_byte(byte value, bool verify)
 {
     clog(trace) << "Send byte 0x" << std::hex << value << std::endl;
@@ -249,11 +328,13 @@ bool SerialInterface::write_byte(byte value, bool verify)
     }
     set_RTS(false);
     nanodelay();
+
     bool status = true;
     if (verify)
     {
         status = get_CTS();
         //TODO: checking value of status, error routine
+        // TODO: exceptions?
         nanodelay();
         set_DTR(false);
         nanodelay();
@@ -263,34 +344,26 @@ bool SerialInterface::write_byte(byte value, bool verify)
     return status;
 }
 
-void SerialInterface::read_next()
-{
-    clog(debug) << "read_next_byte_seq" << std::endl;
-    set_RTS(true);
-    nanodelay();
-    set_DTR(false);
-    nanodelay();
-    set_DTR(true);
-    nanodelay();
-    set_RTS(false);
-    nanodelay();
-}
-
 
 //
 // Generic I/O operations
 //
 
+/**
+ * Read an arbitrary amount of data.
+ * @param location Location to read from.
+ * @param length   Amount of bytes to read.
+ * @return         Data read.
+ */
 std::vector<byte> SerialInterface::read_data(address location, size_t length)
 {
-    if (!query_address(location) || !send_command(0xA1))
+    if (!request(location) || !send_command(0xA1))
         return std::vector<byte>(); // TODO: error?
 
     std::vector<byte> readdata(length);
     readdata[0] = read_byte();
-    for (size_t i = 1; i < length; i++)
-    {
-        read_next();
+    for (size_t i = 1; i < length; i++) {
+        request_next();
         readdata[i] = read_byte();
     }
     end_command();
@@ -298,10 +371,15 @@ std::vector<byte> SerialInterface::read_data(address location, size_t length)
     return readdata;
 }
 
+/**
+ * Write an arbitrary amount of data.
+ * @param location Location to write to.
+ * @param data     Data to write.
+ */
 bool SerialInterface::write_data(address location, const std::vector<byte> &data)
 {
     start_sequence();
-    if (!query_address(location))
+    if (!request(location))
         return false;
     for (size_t i = 0; i < data.size(); i++)
         if (!write_byte(data[i]))
@@ -326,6 +404,12 @@ bool SerialInterface::write_data(address location, const std::vector<byte> &data
 // Command interface
 //
 
+/**
+ * Send a command.
+ * @param value  Command to send.
+ * @param verify Whether the send has to be verified (default: true).
+ * @return       Whether the command was send successfully.
+ */
 bool SerialInterface::send_command(byte command, bool verify)
 {
     set_DTR(false);
@@ -370,11 +454,4 @@ void SerialInterface::end_command()
 void SerialInterface::nanodelay()
 {
     usleep(4);
-}
-
-bool SerialInterface::query_address(address location)
-{
-    return send_command(0xA0)
-        && write_byte((uint8_t)(location / 256))
-        && write_byte((uint8_t)(location % 256));
 }

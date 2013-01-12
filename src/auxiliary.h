@@ -30,6 +30,8 @@ enum LogLevel {
     trace
 };
 
+// TODO: static LogSettings with indentation etc
+
 // Logging
 extern std::ostream cnull;
 std::ostream& clog(uint8_t level);

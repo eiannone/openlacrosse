@@ -46,8 +46,12 @@ public:
     void set_RTS(bool value);
     bool get_DSR();
     bool get_CTS();
-    int read_device(unsigned char *data, size_t size);
-    int write_device(const unsigned char *data, size_t size);
+    size_t read_device(unsigned char *data, size_t length);
+    size_t write_device(const unsigned char *data, size_t length);
+
+    // Addressing operations
+    bool request(address location);
+    void request_next();
 
     // Bit-level I/O operations
     byte read_bit();
@@ -56,7 +60,6 @@ public:
     // Byte-level I/O operations
     byte read_byte();
     bool write_byte(byte value, bool verify = true);
-    void read_next();
 
     // Generic I/O operations
     std::vector<byte> read_data(address location, size_t length);
@@ -70,7 +73,6 @@ public:
     // Auxiliary
 private:
     void nanodelay();
-    bool query_address(address location);
 
     // Serial port filehandle
     int _sp;
