@@ -24,10 +24,8 @@ WS8610::WS8610(const std::string& portname) : _iface(portname)
     clog(debug) << "Performing handshake" << std::endl;
 
     clog(trace) << "Sending magic string" << std::endl;
-    unsigned char buffer[BUFFER_SIZE];
-    for (int i = 0; i < 1024; i++)
-        buffer[i] = 'U';
-    _iface.write_device(buffer, 1024);
+    std::vector<unsigned char> magic(1024, 'U');
+    _iface.write_device(magic);
 
     clog(trace) << "Clearing DTR and RTS" << std::endl;
     _iface.set_DTR(false);
@@ -55,7 +53,8 @@ WS8610::WS8610(const std::string& portname) : _iface(portname)
         throw ProtocolException("Connection timeout (did not clear DSR)");
     }
 
-    _iface.write_device(buffer, 1024);
+    clog(trace) << "Sending magic string" << std::endl;
+    _iface.write_device(magic);
 
     clog(trace) << "Getting external sensor count" << std::endl;
     _external_sensors = external_sensors();
@@ -99,16 +98,17 @@ WS8610::HistoryRecord WS8610::history(int record_no)
         record_no -= _max_records;
 
     address location = (address)(HISTORY_START_LOCATION + record_no * _record_size);
-    clog(trace) << "Reading record no. " << record_no << " from address 0x" << std::hex << location << std::endl;
+    clog(trace) << "Reading record no. " << record_no << " from address 0x"
+        << std::hex << (int)location << std::dec << std::endl;
 
     std::vector<byte> record = read_safe(location, _record_size);
     if (record.size() != _record_size)
         throw ProtocolException("Invalid history data received");
 
-    clog(trace) << "Record contents:";
+    clog(trace) << "Record contents:" << std::hex;
     for (size_t i = 0; i < _record_size; i++)
-        clog(trace) << " 0x" << std::hex << record[i];
-    clog(trace) << std::endl;
+        clog(trace) << " 0x" << (int)record[i];
+    clog(trace) << std::dec << std::endl;
 
     ptime datetime = parse_datetime(record);
 
@@ -121,7 +121,7 @@ WS8610::HistoryRecord WS8610::history(int record_no)
         humidity[s] = parse_humidity(record, s);
 
     HistoryRecord hr{datetime, _external_sensors, temperature, humidity};
-    clog(trace) << "Parsed record contents:" << hr;
+    clog(trace) << "Parsed record contents: " << hr << std::endl;
 
     return hr;
 }
@@ -171,7 +171,8 @@ WS8610::HistoryRecord WS8610::history_last()
     // Try to see if record (n+1) is valid
     auto check = read_safe((address)(HISTORY_START_LOCATION + (tot_records * _record_size)), 1);
 
-    clog(debug) << "Next record start with " << std::hex << check[0] << std::endl;
+    clog(debug) << "Next record start with " << std::hex << check[0]
+        << std::dec << std::endl;
     // If valid then read one record ahead
     if (check[0] != 0xFF)
     {
@@ -300,11 +301,11 @@ int WS8610::parse_humidity(const std::vector<byte> &data, int sensor)
 
 std::ostream & operator<<(std::ostream &os, const WS8610::HistoryRecord &hr)
 {
-    os << hr.temperature[0] << " °C  " << hr.humidity[0] << " %";
+    os << hr.temperature[0] << "°C " << hr.humidity[0] << "%";
     if (hr.sensors > 1) {
         os << " (";
         for (size_t i = 0; i < hr.sensors; i++) {
-            os << hr.temperature[i] << " °C  " << hr.humidity[i] << " %";
+            os << hr.temperature[i] << "°C " << hr.humidity[i] << "%";
             if (i < hr.sensors - 1)
                 os << ", ";
         }

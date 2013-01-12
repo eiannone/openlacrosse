@@ -75,9 +75,9 @@ private:
     SerialInterface _iface;
 
     // Station characteristics
-    uint8_t _external_sensors;
-    uint8_t _record_size;
-    uint8_t _max_records;
+    unsigned int _external_sensors;
+    unsigned int _record_size;
+    unsigned int _max_records;
 };
 
 // Operators

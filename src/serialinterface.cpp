@@ -6,7 +6,8 @@
 #include "serialinterface.h"
 
 // Standard library
-#include <string.h>
+#include <cstring>
+#include <cassert>
 
 // Platform
 #include <termios.h>
@@ -191,32 +192,31 @@ bool SerialInterface::get_CTS()
 
 /**
  * Read data from the serial line in the usual manner.
- * @param  data   Pointer to the buffer to write to.
  * @param  length Number of bytes to read.
- * @return        Numbers of bytes read.
+ * @return        Data read..
  */
-size_t SerialInterface::read_device(unsigned char *data, size_t length)
+std::vector<byte> SerialInterface::read_device(size_t length)
 {
+    std::vector<byte> data(length);
     size_t ret;
 
     for (;;) {
-        ret = read(_sp, data, length);
+        ret = read(_sp, data.data(), length);
         if (ret == 0 && errno == EINTR)
             continue;
-        return ret;
+        assert(ret == length);
+        return data;
     }
 }
 
 /**
  * Write data over the serial line in the usual manner.
- * @param  data   Pointer to the buffer to read from.
- * @param  length Number of bytes to write.
- * @return        Number of bytes written.
+ * @param  data   Data to send.
  */
-size_t SerialInterface::write_device(const unsigned char *data, size_t length)
+void SerialInterface::write_device(const std::vector<byte> &data)
 {
-    size_t ret = write(_sp, data, length);
-    return ret;
+    size_t ret = write(_sp, data.data(), data.size());
+    assert(ret == data.size());
 }
 
 

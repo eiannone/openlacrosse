@@ -46,8 +46,8 @@ public:
     void set_RTS(bool value);
     bool get_DSR();
     bool get_CTS();
-    size_t read_device(unsigned char *data, size_t length);
-    size_t write_device(const unsigned char *data, size_t length);
+    std::vector<byte> read_device(size_t length);
+    void write_device(const std::vector<byte> &data);
 
     // Addressing operations
     bool request(address location);
