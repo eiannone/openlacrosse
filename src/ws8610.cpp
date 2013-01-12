@@ -107,12 +107,7 @@ WS8610::HistoryRecord WS8610::history(int record_no)
         clog(debug) << " " << std::hex << record[i];
     clog(debug) << std::endl;
 
-    int min = (record[0] >> 4) * 10 + (record[0] & 0x0F);
-    int hour = (record[1] >> 4) * 10 + (record[1] & 0x0F);
-    int mday = (record[2] >> 4) * 10 + (record[2] & 0x0F);
-    int mon = (record[3] >> 4) * 10 + (record[3] & 0x0F);
-    int year = (record[4] >> 4) * 10 + (record[4] & 0x0F) + 2000;
-    ptime datetime(date(year, mon, mday), hours(hour) + minutes(min));
+    ptime datetime = parse_datetime(record);
 
     auto temperature = std::vector<double>(_external_sensors + 1);
     for (auto s = 0; s <= _external_sensors; s++)
@@ -201,7 +196,6 @@ bool WS8610::history_reset()
 
 std::vector<byte> WS8610::read_safe(address location, size_t length)
 {
-    //unsigned char readdata2[32768];
     clog(trace) << "read_safe" << std::endl;
     std::vector<byte> readdata, readdata2;
     int j;
@@ -245,24 +239,39 @@ std::vector<byte> WS8610::memory(address location, size_t length)
     return read_safe(location, length);
 }
 
-double WS8610::parse_temperature(std::vector<byte> data, int sensor)
+ptime WS8610::parse_datetime(const std::vector<byte> &data)
+{
+    int min = (data[0] >> 4) * 10 + (data[0] & 0x0F);
+    int hour = (data[1] >> 4) * 10 + (data[1] & 0x0F);
+    int mday = (data[2] >> 4) * 10 + (data[2] & 0x0F);
+    int mon = (data[3] >> 4) * 10 + (data[3] & 0x0F);
+    int year = (data[4] >> 4) * 10 + (data[4] & 0x0F) + 2000;
+
+    return ptime(date(year, mon, mday), hours(hour) + minutes(min));
+}
+
+double WS8610::parse_temperature(const std::vector<byte> &data, int sensor)
 {
     switch (sensor)
     {
         case 0:
-            return ((data[6] & 0x0F) * 10 + (data[5] >> 4) + (data[5] & 0x0F) / 10.0) - 30.0;
+            return ((data[6] & 0x0F) * 10 + (data[5] >> 4)
+                + (data[5] & 0x0F) / 10.0) - 30.0;
         case 1:
-            return ((data[7] & 0x0F) + (data[7] >> 4) * 10 + (data[6] >> 4) / 10.0) - 30.0;
+            return ((data[7] & 0x0F) + (data[7] >> 4) * 10
+                + (data[6] >> 4) / 10.0) - 30.0;
         case 2:
-            return ((data[11] & 0x0F) * 10 + (data[10] >> 4) + (data[10] & 0x0F) / 10.0) - 30.0;
+            return ((data[11] & 0x0F) * 10 + (data[10] >> 4)
+                + (data[10] & 0x0F) / 10.0) - 30.0;
         case 3:
-            return ((data[13] & 0x0F) + (data[13] >> 4) * 10 + (data[12] >> 4) / 10.0) - 30.0;
+            return ((data[13] & 0x0F) + (data[13] >> 4) * 10
+                + (data[12] >> 4) / 10.0) - 30.0;
         default:
             throw ProtocolException("Invalid sensor");
     }
 }
 
-int WS8610::parse_humidity(std::vector<byte> data, int sensor)
+int WS8610::parse_humidity(const std::vector<byte> &data, int sensor)
 {
     switch (sensor)
     {

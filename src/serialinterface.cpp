@@ -185,7 +185,7 @@ int SerialInterface::read_device(unsigned char *data, size_t length)
     }
 }
 
-int SerialInterface::write_device(unsigned char *data, size_t length)
+int SerialInterface::write_device(const unsigned char *data, size_t length)
 {
     int ret = write(_sp, data, length);
     return ret;

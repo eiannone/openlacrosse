@@ -21,9 +21,9 @@ using namespace boost::posix_time;
 // Configurable values
 #define INIT_WAIT 500
 #define MAX_READ_RETRIES 20
-const address HISTORY_START_LOCATION = 0x0064;                        // Starting address where history data is stored
+const address HISTORY_START_LOCATION = 0x0064;
 const address HISTORY_END_LOCATION = 0x7FFF;
-const address HISTORY_BUFFER_SIZE = HISTORY_END_LOCATION - HISTORY_START_LOCATION;   // Size of history buffer, in bytes
+const address HISTORY_BUFFER_SIZE = HISTORY_END_LOCATION - HISTORY_START_LOCATION;
 
 
 //
@@ -65,8 +65,9 @@ public:
     // Auxiliary
     std::vector<byte> read_safe(address location, size_t length);
     std::vector<byte> memory(address location, size_t length);
-    static double parse_temperature(std::vector<byte> data, int sensor);
-    static int parse_humidity(std::vector<byte> data, int sensor);
+    static ptime parse_datetime(const std::vector<byte> &data);
+    static double parse_temperature(const std::vector<byte> &data, int sensor);
+    static int parse_humidity(const std::vector<byte> &data, int sensor);
 
 private:
     SerialInterface _iface;

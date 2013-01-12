@@ -47,7 +47,7 @@ public:
     bool get_DSR();
     bool get_CTS();
     int read_device(unsigned char *data, size_t size);
-    int write_device(unsigned char *data, size_t size);
+    int write_device(const unsigned char *data, size_t size);
 
     // Bit-level I/O operations
     byte read_bit();
