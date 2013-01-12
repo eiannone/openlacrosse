@@ -8,11 +8,21 @@
 // Platform
 #include <unistd.h>
 
+// Boost
+#include <boost/date_time/gregorian/gregorian.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+using namespace boost::gregorian;
+
 // Local includes
 #include "auxiliary.h"
 
-// Boost
-using namespace boost::gregorian;
+// Configurable values
+#define INIT_WAIT 500
+#define MAX_READ_RETRIES 20
+#define HISTORY_START_LOCATION 0x0064
+#define HISTORY_END_LOCATION 0x7FFF
+#define MAGIC_LENGTH 64 // Windows tool uses 1024 characters,
+                        // but this takes too long
 
 
 //
@@ -24,7 +34,7 @@ WS8610::WS8610(const std::string& portname) : _iface(portname)
     clog(debug) << "Performing handshake" << std::endl;
 
     clog(trace) << "Sending magic string" << std::endl;
-    std::vector<unsigned char> magic(1024, 'U');
+    std::vector<unsigned char> magic(MAGIC_LENGTH, 'U');
     _iface.write_device(magic);
 
     clog(trace) << "Clearing DTR and RTS" << std::endl;
@@ -72,7 +82,7 @@ WS8610::WS8610(const std::string& portname) : _iface(portname)
         default:
             throw ProtocolException("Unsupported amount of external sensors");
     }
-    _max_records = HISTORY_BUFFER_SIZE / _record_size;
+    _max_records = (HISTORY_END_LOCATION - HISTORY_START_LOCATION) / _record_size;
     clog(trace) << "Given " << _external_sensors << " external sensors, the record size is " << _record_size << " and the history is limited to " << _max_records << " records" << std::endl;
 }
 
@@ -302,12 +312,12 @@ std::ostream & operator<<(std::ostream &os, const WS8610::HistoryRecord &hr)
     os << hr.temperature[0] << "°C " << hr.humidity[0] << "%";
     if (hr.sensors > 1) {
         os << " (";
-        for (size_t i = 0; i < hr.sensors; i++) {
+        for (size_t i = 1; i <= hr.sensors; i++) {
             os << hr.temperature[i] << "°C " << hr.humidity[i] << "%";
-            if (i < hr.sensors - 1)
+            if (i <= hr.sensors - 1)
                 os << ", ";
         }
-        os << ")";
+        os << ") at " << hr.datetime;
     }
     return os;
 }

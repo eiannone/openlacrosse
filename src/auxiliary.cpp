@@ -17,27 +17,43 @@ using namespace boost::posix_time;
 // Null stream
 std::ostream cnull(0);
 
+// Logger instantiation
+Logger logger;
+
 
 //
 // Construction and destruction
 //
 //
 Logger::Logger() : _buf(std::cout.rdbuf()) {
+    // Replace the default stream buffer
+    // TODO: do this for cerr as well, and use it for warnings and errors
     std::cout.flush();
-    std::cout.rdbuf(&_buf);    
+    std::cout.rdbuf(&_buf);
+
+    // Default configuration
+    settings.threshold = info;
+    settings.prefix_timestamp = false;
+    settings.prefix_level = false;
 }
 
 
 //
 // Logging
-// 
+//
 
 std::ostream& Logger::log(LogLevel level)
 {
-    if (level <= THRESHOLD) {
+    if (level <= settings.threshold) {
+        // Manage prefixes
         char last_char = _buf.last_char();
-        if (last_char == '\r' || last_char == '\n')
-            std::cout << timestamp() << "  " << prefix(level) << "\t";
+        if (last_char == '\r' || last_char == '\n') {
+            if (settings.prefix_timestamp)
+                std::cout << timestamp() << "  ";
+            if (settings.prefix_level)
+                std::cout << prefix(level) << "\t";
+        }
+
         return std::cout;
     } else {
         return cnull;

@@ -18,13 +18,6 @@ using namespace boost::posix_time;
 // Local includes
 #include "serialinterface.h"
 
-// Configurable values
-#define INIT_WAIT 500
-#define MAX_READ_RETRIES 20
-const address HISTORY_START_LOCATION = 0x0064;
-const address HISTORY_END_LOCATION = 0x7FFF;
-const address HISTORY_BUFFER_SIZE = HISTORY_END_LOCATION - HISTORY_START_LOCATION;
-
 
 //
 // Module definitions

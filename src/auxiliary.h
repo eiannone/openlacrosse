@@ -12,9 +12,6 @@
 // Boost
 #include <boost/integer.hpp>
 
-// Configurable values
-#define THRESHOLD 5
-
 
 //
 // Module definitions
@@ -58,6 +55,14 @@ class Logger {
 public:
     Logger();
 
+    // Configuration
+    struct
+    {
+        LogLevel threshold;
+        bool prefix_timestamp;
+        bool prefix_level;
+    } settings;
+
     // Logging
     std::ostream& log(LogLevel level);
 
@@ -69,7 +74,7 @@ private:
     // Replacement stream buffer
     keepbuf _buf;
 };
-static Logger logger;
+extern Logger logger;
 
 // Syntax sugar
 std::ostream& clog(LogLevel level);
