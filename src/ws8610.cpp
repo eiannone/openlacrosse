@@ -56,7 +56,8 @@ WS8610::WS8610(const std::string& portname) : _iface(portname)
     clog(trace) << "Sending magic string" << std::endl;
     _iface.write_device(magic);
 
-    clog(trace) << "Getting external sensor count" << std::endl;
+    clog(debug) << "Reading static properties" << std::endl;
+
     _external_sensors = external_sensors();
     switch (_external_sensors) {
         case 1:
@@ -72,7 +73,7 @@ WS8610::WS8610(const std::string& portname) : _iface(portname)
             throw ProtocolException("Unsupported amount of external sensors");
     }
     _max_records = HISTORY_BUFFER_SIZE / _record_size;
-    clog(debug) << "Given " << _external_sensors << " external sensors, the record size is " << _record_size << " and the history is limited to " << _max_records << " records" << std::endl;
+    clog(trace) << "Given " << _external_sensors << " external sensors, the record size is " << _record_size << " and the history is limited to " << _max_records << " records" << std::endl;
 }
 
 //
@@ -98,7 +99,7 @@ WS8610::HistoryRecord WS8610::history(int record_no)
         record_no -= _max_records;
 
     address location = (address)(HISTORY_START_LOCATION + record_no * _record_size);
-    clog(trace) << "Reading record no. " << record_no << " from address 0x"
+    clog(trace) << "Reading record " << record_no << " from address 0x"
         << std::hex << (int)location << std::dec << std::endl;
 
     std::vector<byte> record = read_safe(location, _record_size);
@@ -163,26 +164,22 @@ WS8610::HistoryRecord WS8610::history_last()
     ptime dt_last = history_modtime();
     time_duration difference = dt_last - first_rec.datetime;
     int tot_records = 1 + (60*difference.hours() + difference.minutes()) / 5;
-
-    clog(debug) << "Tot history: " << tot_records << " records" << std::endl;
-    clog(debug) << "Date first: " << first_rec.datetime << std::endl;
-    clog(debug) << "Date last: " << dt_last << std::endl;
+    clog(trace) << "Total amount of records is " << tot_records << std::endl;
 
     // Try to see if record (n+1) is valid
     auto check = read_safe((address)(HISTORY_START_LOCATION + (tot_records * _record_size)), 1);
-
-    clog(debug) << "Next record start with " << std::hex << check[0]
-        << std::dec << std::endl;
-    // If valid then read one record ahead
+    clog(trace) << "Next one starts with " << std::hex << (int)check[0] << std::dec;
     if (check[0] != 0xFF)
     {
-        clog(debug) << "Seems valid, skipping to it" << std::endl;
+        clog(trace) << ", so skipping to it" << std::endl;
         tot_records++;
     }
     else
     {
-        clog(debug) << "Seems invalid, stick with current record" << std::endl;
+        clog(trace) << ", so sticking with current record" << std::endl;
     }
+
+    clog(debug) << "Last record is at " << tot_records - 1 << std::endl;
     return history(tot_records - 1);
 }
 
@@ -202,36 +199,37 @@ bool WS8610::history_reset()
 
 std::vector<byte> WS8610::read_safe(address location, size_t length)
 {
-    clog(trace) << "read_safe" << std::endl;
-    std::vector<byte> readdata, readdata2;
+    std::vector<byte> data, data2;
+
     int j;
     for (j = 0; j < MAX_READ_RETRIES; j++)
     {
         _iface.start_sequence();
-        readdata = _iface.read_data(location, length);
+        data = _iface.read_data(location, length);
         _iface.start_sequence();
-        readdata2 = _iface.read_data(location, length);
-        if (readdata.size() == 0 || readdata != readdata2)
+        data2 = _iface.read_data(location, length);
+
+        if (data.size() == 0 || data != data2)
         {
-            clog(debug) << "read_safe - two readings not identical" << std::endl;
+            clog(warning) << "Reading twice resulted in different data" << std::endl;
             continue;
         }
-        //check if only 0's for reading memory range greater then 10 bytes
-        clog(debug) << "read_safe - two readings identical" << std::endl;
+
+        // If we read more than 10 bytes we should never receive only 0's
         int i = 0;
         if (length > 10)
-            for (; readdata[i] == 0 && i < length; i++)
+            for (; data[i] == 0 && i < length; i++)
             { }
 
         if (i != length)
             break;
-        clog(debug) << "read_safe - only zeros" << std::endl;
+        clog(warning) << "Reading data resulted in only 0's" << std::endl;
     }
-    // If we have tried MAX_READ_RETRIES times to read we expect not to have valid data
+    
     if (j == MAX_READ_RETRIES)
         throw ProtocolException("Safe read failed");
 
-    return readdata;
+    return data;
 }
 
 std::vector<byte> WS8610::memory(address location, size_t length)
