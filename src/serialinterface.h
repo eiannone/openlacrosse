@@ -19,8 +19,8 @@
 #define BUFFER_SIZE 16384
 
 // Type definitions
-typedef uint16_t address;
 typedef uint8_t byte;
+typedef uint16_t address;
 
 
 //
@@ -68,9 +68,11 @@ public:
     void end_command();
 
     // Auxiliary
+private:
     void nanodelay();
     bool query_address(address location);
-private:
+
+    // Serial port filehandle
     int _sp;
 };
 

@@ -52,7 +52,7 @@ WS8610::WS8610(const std::string& portname) : _iface(portname)
 
     _iface.write_device(buffer, 448);
 
-    // Configure communication properties dependant on
+    // Configure communication properties dependent on
     // the amount of external sensors
     _external_sensors = external_sensors();
     switch (_external_sensors) {
@@ -93,8 +93,8 @@ WS8610::HistoryRecord WS8610::history(int record_no)
     while (record_no >= _max_records)
         record_no -= _max_records;
 
-    short addr = (short)(HISTORY_START_LOCATION + record_no * _record_size);
-    std::vector<byte> record = read_safe(addr, _record_size);
+    address location = (address)(HISTORY_START_LOCATION + record_no * _record_size);
+    std::vector<byte> record = read_safe(location, _record_size);
     if (record.size() != _record_size)
         throw ProtocolException("Invalid history data received");
 
@@ -102,7 +102,7 @@ WS8610::HistoryRecord WS8610::history(int record_no)
         << " additional sensor(s), record length is " << _record_size
         << ", " << "max record count is " << _max_records << std::endl;
     clog(debug) << "Reading record n. " << record_no << " at 0x"
-        << std::hex << addr << ":";
+        << std::hex << location << ":";
     for (size_t i = 0; i < _record_size; i++)
         clog(debug) << " " << std::hex << record[i];
     clog(debug) << std::endl;
@@ -164,7 +164,7 @@ WS8610::HistoryRecord WS8610::history_last()
     clog(debug) << "Date last: " << dt_last << std::endl;
 
     // Try to see if record (n+1) is valid
-    auto check = read_safe((short)(HISTORY_START_LOCATION + (tot_records * _record_size)), 1);
+    auto check = read_safe((address)(HISTORY_START_LOCATION + (tot_records * _record_size)), 1);
 
     clog(debug) << "Next record start with " << std::hex << check[0] << std::endl;
     // If valid then read one record ahead

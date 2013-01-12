@@ -62,6 +62,7 @@ public:
     HistoryRecord history_last();
     bool history_reset();
 
+private:
     // Auxiliary
     std::vector<byte> read_safe(address location, size_t length);
     std::vector<byte> memory(address location, size_t length);
@@ -69,9 +70,10 @@ public:
     static double parse_temperature(const std::vector<byte> &data, int sensor);
     static int parse_humidity(const std::vector<byte> &data, int sensor);
 
-private:
+    // Communication interface
     SerialInterface _iface;
 
+    // Station characteristics
     uint8_t _external_sensors;
     uint8_t _record_size;
     uint8_t _max_records;
