@@ -44,6 +44,7 @@ public:
     struct HistoryRecord
     {
         ptime datetime;
+        unsigned int sensors;
         std::vector<double> temperature;
         std::vector<int> humidity;
     };
@@ -78,5 +79,8 @@ private:
     uint8_t _record_size;
     uint8_t _max_records;
 };
+
+// Operators
+std::ostream & operator<<(std::ostream &os, const WS8610::HistoryRecord &hr);
 
 #endif

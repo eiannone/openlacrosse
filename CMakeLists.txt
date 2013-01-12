@@ -1,15 +1,18 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 PROJECT(openlacrosse)
 
-FIND_PACKAGE(Boost)
+FIND_PACKAGE(Boost COMPONENTS date_time)
 IF (Boost_FOUND)
     INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
-    ADD_DEFINITIONS( "-DHAS_BOOST" )
 ENDIF()
 
 SET(CMAKE_CXX_FLAGS "-std=c++0x")
 
+MESSAGE(ERROR "Boost")
+MESSAGE(ERROR ${Boost_LIBRARIES})
+
 ADD_LIBRARY(auxiliary src/auxiliary.h src/auxiliary.cpp)
+TARGET_LINK_LIBRARIES(auxiliary ${Boost_LIBRARIES})
 
 ADD_LIBRARY(serialinterface src/serialinterface.h src/serialinterface.cpp)
 TARGET_LINK_LIBRARIES(serialinterface auxiliary)

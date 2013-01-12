@@ -26,7 +26,7 @@
 SerialInterface::SerialInterface(const std::string& portname)
 {
     // Open the port
-    clog(info) << "open_weatherstation" << std::endl;
+    //clog(info) << "open_weatherstation" << std::endl;
     if ((_sp = open(portname.c_str(), O_RDWR | O_NOCTTY)) < 0)
         throw HardwareException("Unable to open serial device");
     if ( flock(_sp, LOCK_EX) < 0 )
@@ -102,12 +102,12 @@ void SerialInterface::set_DTR(bool value)
     ioctl(_sp, TIOCMGET, &portstatus);   // get current port status
     if (value)
     {
-        clog(trace) << "Set DTR" << std::endl;
+        //clog(trace) << "Set DTR" << std::endl;
         portstatus |= TIOCM_DTR;
     }
     else
     {
-        clog(trace) << "Clear DTR" << std::endl;
+        //clog(trace) << "Clear DTR" << std::endl;
         portstatus &= ~TIOCM_DTR;
     }
     ioctl(_sp, TIOCMSET, &portstatus);   // set current port status
@@ -129,12 +129,12 @@ void SerialInterface::set_RTS(bool value)
     ioctl(_sp, TIOCMGET, &portstatus);   // get current port status
     if (value)
     {
-        clog(trace) << "Set RTS" << std::endl;
+        //clog(trace) << "Set RTS" << std::endl;
         portstatus |= TIOCM_RTS;
     }
     else
     {
-        clog(trace) << "Clear RTS" << std::endl;
+        //clog(trace) << "Clear RTS" << std::endl;
         portstatus &= ~TIOCM_RTS;
     }
     ioctl(_sp, TIOCMSET, &portstatus);   // set current port status
@@ -158,12 +158,12 @@ bool SerialInterface::get_DSR()
 
     if (portstatus & TIOCM_DSR)
     {
-        clog(trace) << "Got DSR = 1" << std::endl;
+        //clog(trace) << "Got DSR = 1" << std::endl;
         return true;
     }
     else
     {
-        clog(trace) << "Got DSR = 0" << std::endl;
+        //clog(trace) << "Got DSR = 0" << std::endl;
         return false;
     }
 }
@@ -179,12 +179,12 @@ bool SerialInterface::get_CTS()
 
     if (portstatus & TIOCM_CTS)
     {
-        clog(trace) << "Got CTS = 1" << std::endl;
+        //clog(trace) << "Got CTS = 1" << std::endl;
         return true;
     }
     else
     {
-        clog(trace) << "Got CTS = 0" << std::endl;
+        //clog(trace) << "Got CTS = 0" << std::endl;
         return false;
     }
 }
@@ -241,7 +241,7 @@ bool SerialInterface::request(address location)
  */
 void SerialInterface::request_next()
 {
-    clog(debug) << "request_next_byte_seq" << std::endl;
+    //clog(debug) << "request_next_byte_seq" << std::endl;
     set_RTS(true);
     nanodelay();
     set_DTR(false);
@@ -263,14 +263,14 @@ void SerialInterface::request_next()
  */
 byte SerialInterface::read_bit()
 {
-    clog(trace) << "Read bit ..." << std::endl;
+    //clog(trace) << "Read bit ..." << std::endl;
     set_DTR(false);
     nanodelay();
     bool status = get_CTS();
     nanodelay();
     set_DTR(true);
     nanodelay();
-    clog(trace) << "Bit = " << (status ? "0" : "1") << std::endl;
+    //clog(trace) << "Bit = " << (status ? "0" : "1") << std::endl;
 
     return (byte)(status ? 0 : 1);
 }
@@ -281,7 +281,7 @@ byte SerialInterface::read_bit()
  */
 void SerialInterface::write_bit(bool bit)
 {
-    clog(trace) << "Write bit " << (bit ? "1" : "0") << std::endl;
+    //clog(trace) << "Write bit " << (bit ? "1" : "0") << std::endl;
     set_RTS(!bit);
     nanodelay();
     set_DTR(false);
@@ -300,14 +300,14 @@ void SerialInterface::write_bit(bool bit)
  */
 byte SerialInterface::read_byte()
 {
-    clog(trace) << "Read byte ..." << std::endl;
+    //clog(trace) << "Read byte ..." << std::endl;
     byte b = 0;
     for (size_t i = 0; i < 8; i++)
     {
         b *= 2;
         b += read_bit();
     }
-    clog(trace) << "byte = 0x" << std::hex << b << std::endl;
+    //clog(trace) << "byte = 0x" << std::hex << b << std::endl;
     return b;
 }
 
@@ -319,7 +319,7 @@ byte SerialInterface::read_byte()
  */
 bool SerialInterface::write_byte(byte value, bool verify)
 {
-    clog(trace) << "Send byte 0x" << std::hex << value << std::endl;
+    //clog(trace) << "Send byte 0x" << std::hex << value << std::endl;
 
     for (size_t i = 0; i < 8; i++)
     {
@@ -428,7 +428,7 @@ bool SerialInterface::send_command(byte command, bool verify)
 
 void SerialInterface::start_sequence()
 {
-    clog(trace) << "start_sequence" << std::endl;
+    //clog(trace) << "start_sequence" << std::endl;
     set_RTS(false);
     nanodelay();
     set_DTR(false);
@@ -437,7 +437,7 @@ void SerialInterface::start_sequence()
 
 void SerialInterface::end_command()
 {
-    clog(trace) << "end_command" << std::endl;
+    //clog(trace) << "end_command" << std::endl;
     set_RTS(true);
     nanodelay();
     set_DTR(false);

@@ -13,7 +13,7 @@
 #include <boost/integer.hpp>
 
 // Configurable values
-#define THRESHOLD 0
+#define THRESHOLD 5
 
 
 //
@@ -30,10 +30,48 @@ enum LogLevel {
     trace
 };
 
-// TODO: static LogSettings with indentation etc
+// Streambuffer
+class keepbuf : public std::streambuf {
+public:
+    keepbuf(std::streambuf* buf) : _buf(buf), _last_char('\n') {
+        // traits_type::eof would be better, but this fits our use case
+        // no buffering, overflow on every char
+        setp(0, 0);
+    }
+    char last_char() const { return _last_char; }
 
-// Logging
+    virtual int_type overflow(int_type c) {
+        _buf->sputc(c);
+        _last_char = c;
+        return c;
+    }
+private:
+    std::streambuf* _buf;
+    char _last_char;
+};
+
+// Null stream
 extern std::ostream cnull;
-std::ostream& clog(uint8_t level);
+
+// Logger
+class Logger {
+public:
+    Logger();
+
+    // Logging
+    std::ostream& log(LogLevel level);
+
+private:
+    // Auxiliary
+    static std::string timestamp();
+    static std::string prefix(LogLevel level);
+    
+    // Replacement stream buffer
+    keepbuf _buf;
+};
+static Logger logger;
+
+// Syntax sugar
+std::ostream& clog(LogLevel level);
 
 #endif

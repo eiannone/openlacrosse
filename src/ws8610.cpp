@@ -21,15 +21,19 @@ using namespace boost::gregorian;
 
 WS8610::WS8610(const std::string& portname) : _iface(portname)
 {
-    // Send the magic initialization string
-    unsigned char buffer[BUFFER_SIZE];
-    for (int i = 0; i < 448; i++)
-        buffer[i] = 'U';
-    _iface.write_device(buffer, 448);
+    clog(debug) << "Performing handshake" << std::endl;
 
+    clog(trace) << "Sending magic string" << std::endl;
+    unsigned char buffer[BUFFER_SIZE];
+    for (int i = 0; i < 1024; i++)
+        buffer[i] = 'U';
+    _iface.write_device(buffer, 1024);
+
+    clog(trace) << "Clearing DTR and RTS" << std::endl;
     _iface.set_DTR(false);
     _iface.set_RTS(false);
 
+    clog(trace) << "Waiting for DSR" << std::endl;
     int i = 0;
     do {
         usleep(10000);
@@ -38,6 +42,7 @@ WS8610::WS8610(const std::string& portname) : _iface(portname)
     if (i == INIT_WAIT)
         throw ProtocolException("Connection timeout (did not set DSR)");
 
+    clog(trace) << "Waiting for DSR getting cleared" << std::endl;
     i = 0;
     do {
         usleep(10000);
@@ -50,10 +55,9 @@ WS8610::WS8610(const std::string& portname) : _iface(portname)
         throw ProtocolException("Connection timeout (did not clear DSR)");
     }
 
-    _iface.write_device(buffer, 448);
+    _iface.write_device(buffer, 1024);
 
-    // Configure communication properties dependent on
-    // the amount of external sensors
+    clog(trace) << "Getting external sensor count" << std::endl;
     _external_sensors = external_sensors();
     switch (_external_sensors) {
         case 1:
@@ -69,6 +73,7 @@ WS8610::WS8610(const std::string& portname) : _iface(portname)
             throw ProtocolException("Unsupported amount of external sensors");
     }
     _max_records = HISTORY_BUFFER_SIZE / _record_size;
+    clog(debug) << "Given " << _external_sensors << " external sensors, the record size is " << _record_size << " and the history is limited to " << _max_records << " records" << std::endl;
 }
 
 //
@@ -94,18 +99,16 @@ WS8610::HistoryRecord WS8610::history(int record_no)
         record_no -= _max_records;
 
     address location = (address)(HISTORY_START_LOCATION + record_no * _record_size);
+    clog(trace) << "Reading record no. " << record_no << " from address 0x" << std::hex << location << std::endl;
+
     std::vector<byte> record = read_safe(location, _record_size);
     if (record.size() != _record_size)
         throw ProtocolException("Invalid history data received");
 
-    clog(debug) << _external_sensors
-        << " additional sensor(s), record length is " << _record_size
-        << ", " << "max record count is " << _max_records << std::endl;
-    clog(debug) << "Reading record n. " << record_no << " at 0x"
-        << std::hex << location << ":";
+    clog(trace) << "Record contents:";
     for (size_t i = 0; i < _record_size; i++)
-        clog(debug) << " " << std::hex << record[i];
-    clog(debug) << std::endl;
+        clog(trace) << " 0x" << std::hex << record[i];
+    clog(trace) << std::endl;
 
     ptime datetime = parse_datetime(record);
 
@@ -117,7 +120,8 @@ WS8610::HistoryRecord WS8610::history(int record_no)
     for (auto s = 0; s <= _external_sensors; s++)
         humidity[s] = parse_humidity(record, s);
 
-    HistoryRecord hr{datetime, temperature, humidity};
+    HistoryRecord hr{datetime, _external_sensors, temperature, humidity};
+    clog(trace) << "Parsed record contents:" << hr;
 
     return hr;
 }
@@ -128,21 +132,22 @@ WS8610::HistoryRecord WS8610::history(int record_no)
 /// <returns>Number of history records stored in memory</returns>
 int WS8610::history_count()
 {
-    auto b = read_safe(0x0009, 2);
-    return (b[0] >> 4) * 1000 + (b[1] & 0x0F) * 100 + (b[0] >> 4) * 10 + (b[0] & 0x0F);
+    auto data = read_safe(0x0009, 2);
+    return (data[0] >> 4) * 1000 + (data[1] & 0x0F) * 100
+        + (data[0] >> 4) * 10 + (data[0] & 0x0F);
 }
 
 ptime WS8610::history_modtime()
 {
-    std::vector<byte> dt = read_safe(0x0000, 6);
-    if (dt.size() != 6)
-        throw ProtocolException("Cannot obtain last recording date/time");
+    std::vector<byte> data = read_safe(0x0000, 6);
+    if (data.size() != 6)
+        throw ProtocolException("Invalid datetime data received");
 
-    int min = ((dt[0] >> 4) * 10) + (dt[0] & 0x0F);
-    int hour = ((dt[1] >> 4) * 10) + (dt[1] & 0x0F);
-    int day = (dt[2] >> 4) + ((dt[3] & 0x0F) * 10);
-    int month = (dt[3] >> 4) + ((dt[4] & 0x0F) * 10);
-    int year = 2000 + (dt[4] >> 4) + ((dt[5] & 0xF) * 10);
+    int min = ((data[0] >> 4) * 10) + (data[0] & 0x0F);
+    int hour = ((data[1] >> 4) * 10) + (data[1] & 0x0F);
+    int day = (data[2] >> 4) + ((data[3] & 0x0F) * 10);
+    int month = (data[3] >> 4) + ((data[4] & 0x0F) * 10);
+    int year = 2000 + (data[4] >> 4) + ((data[5] & 0xF) * 10);
 
     return ptime(date(year, month, day), hours(hour) + minutes(min));
 }
@@ -286,4 +291,24 @@ int WS8610::parse_humidity(const std::vector<byte> &data, int sensor)
         default:
             throw ProtocolException("Invalid sensor");
     }
+}
+
+
+//
+// Operators
+//
+
+std::ostream & operator<<(std::ostream &os, const WS8610::HistoryRecord &hr)
+{
+    os << hr.temperature[0] << " °C  " << hr.humidity[0] << " %";
+    if (hr.sensors > 1) {
+        os << " (";
+        for (size_t i = 0; i < hr.sensors; i++) {
+            os << hr.temperature[i] << " °C  " << hr.humidity[i] << " %";
+            if (i < hr.sensors - 1)
+                os << ", ";
+        }
+        os << ")";
+    }
+    return os;
 }
