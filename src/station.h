@@ -21,6 +21,8 @@ using namespace boost::posix_time;
 // TODO's
 // - Don't use an abstract superclass, but provide stubs which throw an
 //   UnsupportedException
+// - UnsupportedException should be thrown when trying to access unsupported
+//   values, such as rain or wind, due to the format string requesting them.
 
 
 //
@@ -52,6 +54,9 @@ public:
         SensorRecord internal;
         std::vector<SensorRecord> outdoor;
     };
+
+    // Construction and destruction
+    virtual ~Station() { }
 
     // Station properties
     virtual unsigned int external_sensors() = 0;

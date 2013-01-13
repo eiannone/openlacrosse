@@ -4,6 +4,7 @@
 
 // Standard library
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 
 // Boost
@@ -11,6 +12,8 @@
 namespace po = boost::program_options;
 #include <boost/algorithm/string.hpp>
 #include <boost/exception/all.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/posix_time/posix_time_io.hpp>
 
 // Local includes
 #include "auxiliary.h"
@@ -42,6 +45,75 @@ std::istream& operator>>(std::istream& in, Model::Name& model)
 // Main
 //
 
+
+namespace Formatting
+{
+    enum Mode
+    {
+        RAW,
+        BOOST,
+        CUSTOM
+    };
+};
+
+std::string format_record(const Station::SensorRecord &record, ptime datetime, bool internal, unsigned int sensor, const std::string &format)
+{
+    std::stringstream format_stream;
+
+    Formatting::Mode formatting = Formatting::RAW;
+    for (size_t i = 0; i < format.size(); i++) {
+        char current = format[i];
+        if (formatting == Formatting::RAW) {
+            switch (current) {
+                case '%':
+                    formatting = Formatting::BOOST;
+                    break;
+                default:
+                    format_stream << current;
+            }
+        } else if (formatting == Formatting::BOOST) {
+            switch (current) {
+                case '#':
+                    formatting = Formatting::CUSTOM;
+                    break;
+                default:
+                    time_facet *facet = new time_facet(format.substr(i-1, 2).c_str());
+                    format_stream.imbue(std::locale(std::cout.getloc(), facet));
+                    format_stream << datetime;
+
+                    // TODO: make invalid formatting flags set the fail bit
+                    if (format_stream.fail())
+                        throw std::runtime_error("invalid datetime formatting flag");
+
+                    formatting = Formatting::RAW;
+            }
+        } else if (formatting == Formatting::CUSTOM) {
+            switch (current) {
+                case 'T':
+                    format_stream << record.temperature;
+                    break;
+                case 'H':
+                    format_stream << record.humidity;
+                    break;
+                case 't':
+                    if (internal)
+                        format_stream << "internal";
+                    else
+                        format_stream << "outdoor";
+                    break;
+                case 's':
+                    format_stream << sensor;
+                    break;
+                default:
+                    throw std::runtime_error("invalid sensor formatting flag");
+            }
+            formatting = Formatting::RAW;
+        }
+    }
+
+    return format_stream.str();
+}
+
 int main(int argc, char **argv)
 {
     //
@@ -65,10 +137,18 @@ int main(int argc, char **argv)
             "device to read from")
         ("model",
             po::value<Model::Name>()->required(),
-            "model of the device (supported models: WS8610)")
+            "model of the device\n"
+            "supported models: WS8610")
         ("format,f",
-            po::value<std::string>()->default_value(""),
-            "how to format the sensor reading output")
+            po::value<std::string>()
+                ->default_value("Sensor %#s (%#t): %#T°C %#H%% at %c"),
+            "how to format the sensor reading output\n"
+            "supported formatting flags are:\n"
+            " %#T: temperature as reported by station\n"
+            " %#F: humidity as percentage\n"
+            " %#t: sensor type (internal or outdoor)\n"
+            " %#s: sensor number\n"
+            " %-prefixed: Boost's DateTime formatting\n")
     ;
 
     // Declare positional options
@@ -145,13 +225,10 @@ int main(int argc, char **argv)
     
     try {
         auto record = station->history_last();
-        std::cout << "Date/time last record: " << record.datetime << std::endl;
-        std::cout << "Internal temperature: " << record.internal.temperature << " °C" << std::endl;
-        std::cout << "Internal humidity: " << record.internal.humidity << " °C" << std::endl;
-        for (size_t i = 0; i < record.outdoor.size(); i++) {
-            std::cout << "Sensor " << i << " temperature: " << record.outdoor[i].temperature << " °C" << std::endl;
-            std::cout << "Sensor " << i << " humidity: " << record.outdoor[i].humidity << " %" << std::endl;
-        }
+
+        std::cout << format_record(record.internal, record.datetime, true, 0, vm["format"].as<std::string>()) << std::endl;
+        for (size_t i = 0; i < record.outdoor.size(); i++)
+            std::cout << format_record(record.internal, record.datetime, false, i, vm["format"].as<std::string>()) << std::endl;
     }
     catch (std::runtime_error const &e) {
         std::cerr << "Error reading data: " << e.what() << std::endl;

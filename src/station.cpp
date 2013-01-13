@@ -17,7 +17,7 @@ std::ostream & operator<<(std::ostream &os, const Station::HistoryRecord &hr)
         os << " (";
         for (size_t i = 0; i < hr.outdoor.size(); i++) {
             os << hr.outdoor[i].temperature << "°C " << hr.outdoor[i].humidity << "%";
-            if (i <= hr.outdoor.size())
+            if (i < hr.outdoor.size()-1)
                 os << ", ";
         }
         os << ")";
