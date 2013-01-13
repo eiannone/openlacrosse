@@ -8,14 +8,14 @@
 
 // Standard library
 #include <vector>
-#include <stdexcept>
 
 // Boost
-#include <boost/integer.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 using namespace boost::posix_time;
 
 // Local includes
+#include "global.h"
+#include "station.h"
 #include "serialinterface.h"
 
 
@@ -23,37 +23,14 @@ using namespace boost::posix_time;
 // Module definitions
 //
 
-class ProtocolException : std::runtime_error
+class WS8610 : public Station
 {
 public:
-    ProtocolException(const std::string& message)
-        : std::runtime_error(message) { };
-};
-
-class WS8610
-{
-public:
-    // Subclasses
-    struct SensorRecord
-    {
-        // FIXME: initializer list doesn't work due to ambiguity
-        SensorRecord(double temperature, unsigned int humidity)
-            : temperature(temperature), humidity(humidity) { }
-        double temperature;
-        unsigned int humidity;
-    };
-    struct HistoryRecord
-    {
-        ptime datetime;
-        SensorRecord internal;
-        std::vector<SensorRecord> outdoor;
-    };
-
     // Construction and destruction
     WS8610(const std::string& portname);
 
     // Station properties
-    uint8_t external_sensors();
+    unsigned int external_sensors();
 
     // History management
     HistoryRecord history(int record_no);
@@ -79,8 +56,5 @@ private:
     unsigned int _record_size;
     unsigned int _max_records;
 };
-
-// Operators
-std::ostream & operator<<(std::ostream &os, const WS8610::HistoryRecord &hr);
 
 #endif

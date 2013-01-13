@@ -29,7 +29,7 @@ using namespace boost::gregorian;
 // Construction and destruction
 //
 
-WS8610::WS8610(const std::string& portname) : _iface(portname)
+WS8610::WS8610(const std::string& portname) : Station(), _iface(portname)
 {
     clog(debug) << "Performing handshake" << std::endl;
 
@@ -90,7 +90,7 @@ WS8610::WS8610(const std::string& portname) : _iface(portname)
 // Station properties
 //
 
-uint8_t WS8610::external_sensors()
+unsigned int WS8610::external_sensors()
 {
     std::vector<byte> data = read_safe(0x0C, 1);
     if (data.size() == 0)
@@ -297,25 +297,4 @@ unsigned int WS8610::parse_humidity(const std::vector<byte> &data, int sensor)
         default:
             throw ProtocolException("Invalid sensor");
     }
-}
-
-
-//
-// Operators
-//
-
-std::ostream & operator<<(std::ostream &os, const WS8610::HistoryRecord &hr)
-{
-    os << hr.internal.temperature << "°C " << hr.internal.humidity << "%";
-    if (hr.outdoor.size() > 0) {
-        os << " (";
-        for (size_t i = 0; i < hr.outdoor.size(); i++) {
-            os << hr.outdoor[i].temperature << "°C " << hr.outdoor[i].humidity << "%";
-            if (i <= hr.outdoor.size())
-                os << ", ";
-        }
-        os << ")";
-    }
-        os << " at " << hr.datetime;
-    return os;
 }

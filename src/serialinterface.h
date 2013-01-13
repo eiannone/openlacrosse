@@ -11,16 +11,12 @@
 #include <vector>
 #include <stdexcept>
 
-// Boost
-#include <boost/integer.hpp>
+// Local includes
+#include "global.h"
 
 // Configurable values
 #define BAUDRATE B300
 #define BUFFER_SIZE 16384
-
-// Type definitions
-typedef uint8_t byte;
-typedef uint16_t address;
 
 
 //
