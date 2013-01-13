@@ -33,7 +33,7 @@ int main(int argc, char **argv)
     ("verbose,v", "display some more details")
     ("debug,d", "display even more details")
     ("device,d", po::value<std::string>()->default_value("/dev/ttyS0"), "device to read from")
-    ("sensor,s", po::value<std::vector<unsigned int>>(), "sensors to report")
+    ("format,f", po::value<std::string>()->default_value(""), "how to format the sensor reading output")
     ;
 
     // Declare positional options
@@ -81,11 +81,11 @@ int main(int argc, char **argv)
         if (mode == "read") {
             auto record = station.history_last();
             std::cout << "Date/time last record: " << record.datetime << std::endl;
-            std::cout << "Internal temperature: " << record.temperature[0] << " °C" << std::endl;
-            std::cout << "Internal humidity: " << record.humidity[0] << " °C" << std::endl;
-            for (size_t i = 1; i <= station.external_sensors(); i++) {
-                std::cout << "Sensor " << i << " temperature: " << record.temperature[i] << " °C" << std::endl;
-                std::cout << "Sensor " << i << " humidity: " << record.humidity[i] << " %" << std::endl;
+            std::cout << "Internal temperature: " << record.internal.temperature << " °C" << std::endl;
+            std::cout << "Internal humidity: " << record.internal.humidity << " °C" << std::endl;
+            for (size_t i = 0; i < record.outdoor.size(); i++) {
+                std::cout << "Sensor " << i << " temperature: " << record.outdoor[i].temperature << " °C" << std::endl;
+                std::cout << "Sensor " << i << " humidity: " << record.outdoor[i].humidity << " %" << std::endl;
             }
         }
         else {

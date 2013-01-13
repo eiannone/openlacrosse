@@ -34,12 +34,19 @@ class WS8610
 {
 public:
     // Subclasses
+    struct SensorRecord
+    {
+        // FIXME: initializer list doesn't work due to ambiguity
+        SensorRecord(double temperature, unsigned int humidity)
+            : temperature(temperature), humidity(humidity) { }
+        double temperature;
+        unsigned int humidity;
+    };
     struct HistoryRecord
     {
         ptime datetime;
-        unsigned int sensors;
-        std::vector<double> temperature;
-        std::vector<int> humidity;
+        SensorRecord internal;
+        std::vector<SensorRecord> outdoor;
     };
 
     // Construction and destruction
@@ -62,7 +69,7 @@ private:
     std::vector<byte> memory(address location, size_t length);
     static ptime parse_datetime(const std::vector<byte> &data);
     static double parse_temperature(const std::vector<byte> &data, int sensor);
-    static int parse_humidity(const std::vector<byte> &data, int sensor);
+    static unsigned int parse_humidity(const std::vector<byte> &data, int sensor);
 
     // Communication interface
     SerialInterface _iface;

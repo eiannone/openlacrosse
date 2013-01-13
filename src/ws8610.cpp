@@ -123,15 +123,12 @@ WS8610::HistoryRecord WS8610::history(int record_no)
 
     ptime datetime = parse_datetime(record);
 
-    auto temperature = std::vector<double>(_external_sensors + 1);
+    SensorRecord internal{parse_temperature(record, 0), parse_humidity(record, 0)};
+    std::vector<SensorRecord> outdoor;
     for (auto s = 0; s <= _external_sensors; s++)
-        temperature[s] = parse_temperature(record, s);
+        outdoor.push_back(SensorRecord(parse_temperature(record, s), parse_humidity(record, s)));
 
-    auto humidity = std::vector<int>(_external_sensors + 1);
-    for (auto s = 0; s <= _external_sensors; s++)
-        humidity[s] = parse_humidity(record, s);
-
-    HistoryRecord hr{datetime, _external_sensors, temperature, humidity};
+    HistoryRecord hr{datetime, internal, outdoor};
     clog(trace) << "Parsed record contents: " << hr << std::endl;
 
     return hr;
@@ -285,7 +282,7 @@ double WS8610::parse_temperature(const std::vector<byte> &data, int sensor)
     }
 }
 
-int WS8610::parse_humidity(const std::vector<byte> &data, int sensor)
+unsigned int WS8610::parse_humidity(const std::vector<byte> &data, int sensor)
 {
     switch (sensor)
     {
@@ -309,15 +306,16 @@ int WS8610::parse_humidity(const std::vector<byte> &data, int sensor)
 
 std::ostream & operator<<(std::ostream &os, const WS8610::HistoryRecord &hr)
 {
-    os << hr.temperature[0] << "°C " << hr.humidity[0] << "%";
-    if (hr.sensors > 1) {
+    os << hr.internal.temperature << "°C " << hr.internal.humidity << "%";
+    if (hr.outdoor.size() > 0) {
         os << " (";
-        for (size_t i = 1; i <= hr.sensors; i++) {
-            os << hr.temperature[i] << "°C " << hr.humidity[i] << "%";
-            if (i <= hr.sensors - 1)
+        for (size_t i = 0; i < hr.outdoor.size(); i++) {
+            os << hr.outdoor[i].temperature << "°C " << hr.outdoor[i].humidity << "%";
+            if (i <= hr.outdoor.size())
                 os << ", ";
         }
-        os << ") at " << hr.datetime;
+        os << ")";
     }
+        os << " at " << hr.datetime;
     return os;
 }
