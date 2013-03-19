@@ -1,17 +1,29 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+#
+# Configuration
+#
+
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.7)
 PROJECT(openlacrosse)
+
+# Standard libraries
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+
+# Extra warnings
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+
+# Add address sanitizer to debug build
+IF (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang" AND NOT ${CMAKE_CXX_COMPILER_VERSION} LESS "3.2")
+    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O1 -fsanitize=address -fno-omit-frame-pointer")
+ENDIF()
 
 
 #
 # Dependencies
 #
 
+# Boost
 FIND_PACKAGE(Boost COMPONENTS program_options date_time)
-IF (Boost_FOUND)
-    INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
-ENDIF()
-
-SET(CMAKE_CXX_FLAGS "-std=c++0x")
+INCLUDE_DIRECTORIES(SYSTEM ${Boost_INCLUDE_DIR})
 
 
 #
