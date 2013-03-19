@@ -26,19 +26,19 @@ namespace Model
     {
         WS8610
     };
+    std::istream& operator>>(std::istream& in, Name& name)
+    {
+        std::string token;
+        in >> token;
+        if (boost::iequals(token, "ws8610"))
+            name = WS8610;
+        else
+            throw po::validation_error(
+                po::validation_error::invalid_option_value,
+                "Unknown model name");
+        return in;
+    }
 };
-std::istream& operator>>(std::istream& in, Model::Name& model)
-{
-    std::string token;
-    in >> token;
-    if (boost::iequals(token, "ws8610"))
-        model = Model::WS8610;
-    else
-        throw po::validation_error(
-            po::validation_error::invalid_option_value,
-            "Unknown model");
-    return in;
-}
 
 
 //
