@@ -7,10 +7,10 @@
 
 // Platform
 #include <unistd.h>
+#include <ctime>
 
 // Boost
 #include <boost/date_time/gregorian/gregorian.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 using namespace boost::gregorian;
 
 // Local includes
@@ -121,14 +121,17 @@ WS8610::HistoryRecord WS8610::history(int record_no)
         clog(trace) << " 0x" << (int)record[i];
     clog(trace) << std::dec << std::endl;
 
+    tzset();
     ptime datetime = parse_datetime(record);
+    boost::local_time::time_zone_ptr zone(new posix_time_zone(tzname[0]));
+    local_date_time local_datetime(datetime, zone);
 
     SensorRecord internal{parse_temperature(record, 0), parse_humidity(record, 0)};
-    std::vector<SensorRecord> outdoor;
-    for (auto s = 0; s <= _external_sensors; s++)
-        outdoor.push_back(SensorRecord(parse_temperature(record, s), parse_humidity(record, s)));
+    std::vector<SensorRecord> external;
+    for (auto s = 1; s <= _external_sensors; s++)
+        external.push_back(SensorRecord(parse_temperature(record, s), parse_humidity(record, s)));
 
-    HistoryRecord hr{datetime, internal, outdoor};
+    HistoryRecord hr{local_datetime, internal, external};
     clog(trace) << "Parsed record contents: " << hr << std::endl;
 
     return hr;
@@ -145,19 +148,23 @@ int WS8610::history_count()
         + (data[0] >> 4) * 10 + (data[0] & 0x0F);
 }
 
-ptime WS8610::history_modtime()
+local_date_time WS8610::history_modtime()
 {
     std::vector<byte> data = read_safe(0x0000, 6);
     if (data.size() != 6)
         throw ProtocolException("Invalid datetime data received");
 
-    int min = ((data[0] >> 4) * 10) + (data[0] & 0x0F);
-    int hour = ((data[1] >> 4) * 10) + (data[1] & 0x0F);
+    // TODO: merge with parse_datetime, if possible
+    int min = (data[0] >> 4) * 10 + (data[0] & 0x0F);
+    int hour = (data[1] >> 4) * 10 + (data[1] & 0x0F);
     int day = (data[2] >> 4) + ((data[3] & 0x0F) * 10);
-    int month = (data[3] >> 4) + ((data[4] & 0x0F) * 10);
-    int year = 2000 + (data[4] >> 4) + ((data[5] & 0xF) * 10);
+    int month = (data[3] >> 4) + (data[4] & 0x0F) * 10;
+    int year = 2000 + (data[4] >> 4) + (data[5] & 0xF) * 10;
 
-    return ptime(date(year, month, day), hours(hour) + minutes(min));
+    tzset();
+    ptime datetime(date(year, month, day), hours(hour) + minutes(min));
+    boost::local_time::time_zone_ptr zone(new posix_time_zone(tzname[0]));
+    return local_date_time(datetime, zone);
 }
 
 WS8610::HistoryRecord WS8610::history_first()
@@ -168,7 +175,7 @@ WS8610::HistoryRecord WS8610::history_first()
 WS8610::HistoryRecord WS8610::history_last()
 {
     auto first_rec = history(0);
-    ptime dt_last = history_modtime();
+    local_date_time dt_last = history_modtime();
     time_duration difference = dt_last - first_rec.datetime;
     int tot_records = 1 + (60*difference.hours() + difference.minutes()) / 5;
     clog(trace) << "Total amount of records is " << tot_records << std::endl;

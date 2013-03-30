@@ -11,7 +11,9 @@
 
 // Boost
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/local_time/local_time.hpp>
 using namespace boost::posix_time;
+using namespace boost::local_time;
 
 // Local includes
 #include "global.h"
@@ -35,7 +37,7 @@ public:
     // History management
     HistoryRecord history(int record_no);
     int history_count();
-    ptime history_modtime();
+    local_date_time history_modtime();
     HistoryRecord history_first();
     HistoryRecord history_last();
     bool history_reset();

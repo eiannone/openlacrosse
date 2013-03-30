@@ -12,8 +12,8 @@
 namespace po = boost::program_options;
 #include <boost/algorithm/string.hpp>
 #include <boost/exception/all.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/date_time/posix_time/posix_time_io.hpp>
+#include <boost/date_time/local_time/local_time.hpp>
+#include <boost/date_time/local_time/local_time_io.hpp>
 
 // Local includes
 #include "auxiliary.h"
@@ -56,7 +56,7 @@ namespace Formatting
     };
 };
 
-std::string format_record(const Station::SensorRecord &record, ptime datetime, bool internal, unsigned int sensor, const std::string &format)
+std::string format_record(const Station::SensorRecord &record, local_date_time local_datetime, bool internal, unsigned int sensor, const std::string &format)
 {
     std::stringstream format_stream;
 
@@ -77,9 +77,10 @@ std::string format_record(const Station::SensorRecord &record, ptime datetime, b
                     formatting = Formatting::CUSTOM;
                     break;
                 default:
-                    time_facet *facet = new time_facet(format.substr(i-1, 2).c_str());
-                    format_stream.imbue(std::locale(std::cout.getloc(), facet));
-                    format_stream << datetime;
+                    local_time_facet *facet = new local_time_facet(format.substr(i-1, 2).c_str());
+                    std::locale current_locale("");
+                    format_stream.imbue(std::locale(current_locale, facet));
+                    format_stream << local_datetime;
 
                     // TODO: make invalid formatting flags set the fail bit
                     if (format_stream.fail())
@@ -99,7 +100,7 @@ std::string format_record(const Station::SensorRecord &record, ptime datetime, b
                     if (internal)
                         format_stream << "internal";
                     else
-                        format_stream << "outdoor";
+                        format_stream << "external";
                     break;
                 case 's':
                     format_stream << sensor;
@@ -144,9 +145,9 @@ int main(int argc, char **argv)
                 ->default_value("Sensor %#s (%#t): %#T°C %#H%% at %c"),
             "how to format the sensor reading output\n"
             "supported formatting flags are:\n"
-            " %#T: temperature as reported by station\n"
-            " %#F: humidity as percentage\n"
-            " %#t: sensor type (internal or outdoor)\n"
+            " %#T: temperature in degrees Celsius\n"
+            " %#H: humidity as percentage\n"
+            " %#t: sensor type (internal or external)\n"
             " %#s: sensor number\n"
             " %-prefixed: Boost's DateTime formatting\n")
     ;
@@ -168,6 +169,12 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    // Display help
+    if (vm.count("help")) {
+        std::cout << desc << std::endl;
+        return 0;
+    }
+
     // Notify the user of errors
     try {
         po::notify(vm);
@@ -177,12 +184,6 @@ int main(int argc, char **argv)
 
         std::cout << desc << std::endl;
         return 1;
-    }
-
-    // Display help
-    if (vm.count("help")) {
-        std::cout << desc << std::endl;
-        return 0;
     }
 
 
@@ -227,8 +228,8 @@ int main(int argc, char **argv)
         auto record = station->history_last();
 
         std::cout << format_record(record.internal, record.datetime, true, 0, vm["format"].as<std::string>()) << std::endl;
-        for (size_t i = 0; i < record.outdoor.size(); i++)
-            std::cout << format_record(record.internal, record.datetime, false, i, vm["format"].as<std::string>()) << std::endl;
+        for (size_t i = 0; i < record.external.size(); i++)
+            std::cout << format_record(record.external[i], record.datetime, false, i+1, vm["format"].as<std::string>()) << std::endl;
     }
     catch (std::runtime_error const &e) {
         std::cerr << "Error reading data: " << e.what() << std::endl;

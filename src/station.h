@@ -12,8 +12,8 @@
 #include <ostream>
 
 // Boost
-#include <boost/date_time/posix_time/posix_time.hpp>
-using namespace boost::posix_time;
+#include <boost/date_time/local_time/local_time.hpp>
+using namespace boost::local_time;
 
 // Local includes
 #include "global.h"
@@ -50,9 +50,9 @@ public:
     };
     struct HistoryRecord
     {
-        ptime datetime;
+        local_date_time datetime;
         SensorRecord internal;
-        std::vector<SensorRecord> outdoor;
+        std::vector<SensorRecord> external;
     };
 
     // Construction and destruction
@@ -64,7 +64,7 @@ public:
     // History management
     virtual HistoryRecord history(int record_no) = 0;
     virtual int history_count() = 0;
-    virtual ptime history_modtime() = 0;
+    virtual local_date_time history_modtime() = 0;
     virtual HistoryRecord history_first() = 0;
     virtual HistoryRecord history_last() = 0;
     virtual bool history_reset() = 0;
