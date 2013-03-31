@@ -14,6 +14,7 @@
 // Boost
 #include <boost/date_time/local_time/local_time.hpp>
 using namespace boost::local_time;
+#include <boost/optional.hpp>
 
 // Local includes
 #include "global.h"
@@ -43,10 +44,10 @@ public:
     struct SensorRecord
     {
         // FIXME: initializer list doesn't work due to ambiguity
-        SensorRecord(double temperature, unsigned int humidity)
+        SensorRecord(boost::optional<double> temperature, boost::optional<unsigned int> humidity)
             : temperature(temperature), humidity(humidity) { }
-        double temperature;
-        unsigned int humidity;
+        boost::optional<double> temperature;
+        boost::optional<unsigned int> humidity;
     };
     struct HistoryRecord
     {

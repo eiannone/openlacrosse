@@ -12,6 +12,7 @@
 // Boost
 #include <boost/date_time/gregorian/gregorian.hpp>
 using namespace boost::gregorian;
+#include <boost/none.hpp>
 
 // Local includes
 #include "auxiliary.h"
@@ -268,40 +269,60 @@ ptime WS8610::parse_datetime(const std::vector<byte> &data)
     return ptime(date(year, mon, mday), hours(hour) + minutes(min));
 }
 
-double WS8610::parse_temperature(const std::vector<byte> &data, int sensor)
+boost::optional<double> WS8610::parse_temperature(const std::vector<byte> &data, int sensor)
 {
+    boost::optional<double> temperature;
     switch (sensor)
     {
         case 0:
-            return ((data[6] & 0x0F) * 10 + (data[5] >> 4)
+            temperature = ((data[6] & 0x0F) * 10 + (data[5] >> 4)
                 + (data[5] & 0x0F) / 10.0) - 30.0;
+            break;
         case 1:
-            return ((data[7] & 0x0F) + (data[7] >> 4) * 10
+            temperature = ((data[7] & 0x0F) + (data[7] >> 4) * 10
                 + (data[6] >> 4) / 10.0) - 30.0;
+            break;
         case 2:
-            return ((data[11] & 0x0F) * 10 + (data[10] >> 4)
+            temperature = ((data[11] & 0x0F) * 10 + (data[10] >> 4)
                 + (data[10] & 0x0F) / 10.0) - 30.0;
+            break;
         case 3:
-            return ((data[13] & 0x0F) + (data[13] >> 4) * 10
+            temperature = ((data[13] & 0x0F) + (data[13] >> 4) * 10
                 + (data[12] >> 4) / 10.0) - 30.0;
+            break;
         default:
             throw ProtocolException("Invalid sensor");
     }
+
+    if (*temperature == 81.0)
+        temperature = boost::none;
+
+    return temperature;
 }
 
-unsigned int WS8610::parse_humidity(const std::vector<byte> &data, int sensor)
+boost::optional<unsigned int> WS8610::parse_humidity(const std::vector<byte> &data, int sensor)
 {
+    boost::optional<unsigned int> humidity;
     switch (sensor)
     {
         case 0:
-            return (data[8] >> 4) * 10 + (data[8] & 0xF);
+            humidity = (data[8] >> 4) * 10 + (data[8] & 0xF);
+            break;
         case 1:
-            return (data[9] >> 4) * 10 + (data[9] & 0x0F);
+            humidity = (data[9] >> 4) * 10 + (data[9] & 0x0F);
+            break;
         case 2:
-            return (data[11] >> 4) + (data[12] & 0x0F) * 10;
+            humidity = (data[11] >> 4) + (data[12] & 0x0F) * 10;
+            break;
         case 3:
-            return (data[14] >> 4) * 10 + (data[14] & 0x0F);
+            humidity = (data[14] >> 4) * 10 + (data[14] & 0x0F);
+            break;
         default:
             throw ProtocolException("Invalid sensor");
     }
+
+    if (*humidity == 110)
+        humidity = boost::none;
+
+    return humidity;
 }

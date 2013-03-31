@@ -11,9 +11,10 @@
 
 // Boost
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/date_time/local_time/local_time.hpp>
 using namespace boost::posix_time;
+#include <boost/date_time/local_time/local_time.hpp>
 using namespace boost::local_time;
+#include <boost/optional.hpp>
 
 // Local includes
 #include "global.h"
@@ -47,8 +48,8 @@ private:
     std::vector<byte> read_safe(address location, size_t length);
     std::vector<byte> memory(address location, size_t length);
     static ptime parse_datetime(const std::vector<byte> &data);
-    static double parse_temperature(const std::vector<byte> &data, int sensor);
-    static unsigned int parse_humidity(const std::vector<byte> &data, int sensor);
+    static boost::optional<double> parse_temperature(const std::vector<byte> &data, int sensor);
+    static boost::optional<unsigned int> parse_humidity(const std::vector<byte> &data, int sensor);
 
     // Communication interface
     SerialInterface _iface;

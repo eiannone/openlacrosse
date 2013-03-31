@@ -91,10 +91,16 @@ std::string format_record(const Station::SensorRecord &record, local_date_time l
         } else if (formatting == Formatting::CUSTOM) {
             switch (current) {
                 case 'T':
-                    format_stream << record.temperature;
+                    if (record.temperature)
+                        format_stream << *record.temperature;
+                    else
+                        format_stream << "-";
                     break;
                 case 'H':
-                    format_stream << record.humidity;
+                    if (record.humidity)
+                        format_stream << *record.humidity;
+                    else
+                        format_stream << "-";
                     break;
                 case 't':
                     if (internal)

@@ -16,9 +16,17 @@ std::ostream & operator<<(std::ostream &os, const Station::HistoryRecord &hr)
     if (hr.external.size() > 0) {
         os << " (";
         for (size_t i = 0; i < hr.external.size(); i++) {
-            os << hr.external[i].temperature << "°C " << hr.external[i].humidity << "%";
-            if (i < hr.external.size()-1)
-                os << ", ";
+            if (hr.external[i].temperature)
+                os << *hr.external[i].temperature;
+            else
+                os << "-";
+            os << "°C ";
+
+            if (hr.external[i].humidity)
+                os << *hr.external[i].humidity;
+            else
+                os << "-";
+            os << "%";
         }
         os << ")";
     }
