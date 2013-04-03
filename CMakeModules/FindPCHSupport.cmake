@@ -2,9 +2,8 @@ IF (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
         SET(PCHSupport_FOUND TRUE)
 ENDIF()
 
-MACRO(ADD_PCH _header)
+MACRO(ADD_PCH _target _header)
     # Get source and destination file
-    GET_FILENAME_COMPONENT(_target ${_header} NAME)
     GET_FILENAME_COMPONENT(_name ${_header} NAME_WE)
     SET(_source "${CMAKE_CURRENT_SOURCE_DIR}/${_header}")
     SET(_output "${CMAKE_CURRENT_BINARY_DIR}/${_name}.pch")
