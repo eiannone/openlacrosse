@@ -7,22 +7,14 @@
 #define _OPENLACROSSE_WS8610_
 
 // Standard library
-#ifdef USE_PCE
-#include "std_includes.hpp"
-#else
 #include <vector>
-#endif
 
 // Boost
-#ifdef USE_PCE
-#include "boost_includes.hpp"
-#else
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/date_time/local_time/local_time.hpp>
-#include <boost/optional.hpp>
-#endif
 using namespace boost::posix_time;
+#include <boost/date_time/local_time/local_time.hpp>
 using namespace boost::local_time;
+#include <boost/optional.hpp>
 
 // Local includes
 #include "global.hpp"

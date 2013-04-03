@@ -7,13 +7,9 @@
 #define _OPENLACROSSE_SERIALINTERFACE_
 
 // Standard library
-#ifdef USE_PCE
-#include "std_includes.hpp"
-#else
 #include <string>
 #include <vector>
 #include <stdexcept>
-#endif
 
 // Local includes
 #include "global.hpp"

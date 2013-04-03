@@ -7,19 +7,11 @@
 #include "auxiliary.hpp"
 
 // Standard library
-#ifdef USE_PCE
-#include "std_includes.hpp"
-#else
 #include <sstream>
-#endif
 
 // Boost
-#ifdef USE_PCE
-#include "boost_includes.hpp"
-#else
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#endif
 using namespace boost::posix_time;
 
 // Null stream
