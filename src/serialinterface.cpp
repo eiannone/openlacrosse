@@ -3,7 +3,7 @@
 //
 
 // Header
-#include "serialinterface.h"
+#include "serialinterface.hpp"
 
 // Standard library
 #include <cstring>
@@ -17,7 +17,7 @@
 #include <sys/file.h>
 
 // Local includes
-#include "auxiliary.h"
+#include "auxiliary.hpp"
 
 
 //

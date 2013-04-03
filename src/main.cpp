@@ -16,8 +16,8 @@ namespace po = boost::program_options;
 #include <boost/date_time/local_time/local_time_io.hpp>
 
 // Local includes
-#include "auxiliary.h"
-#include "ws8610.h"
+#include "auxiliary.hpp"
+#include "ws8610.hpp"
 
 // Supported models
 namespace Model

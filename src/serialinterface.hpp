@@ -12,7 +12,7 @@
 #include <stdexcept>
 
 // Local includes
-#include "global.h"
+#include "global.hpp"
 
 // Configurable values
 #define BAUDRATE B300

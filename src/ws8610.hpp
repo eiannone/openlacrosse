@@ -17,9 +17,9 @@ using namespace boost::local_time;
 #include <boost/optional.hpp>
 
 // Local includes
-#include "global.h"
-#include "station.h"
-#include "serialinterface.h"
+#include "global.hpp"
+#include "station.hpp"
+#include "serialinterface.hpp"
 
 
 //

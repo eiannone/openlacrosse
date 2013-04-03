@@ -22,7 +22,7 @@ ENDIF()
 #
 
 # Boost
-FIND_PACKAGE(Boost COMPONENTS program_options date_time)
+FIND_PACKAGE(Boost REQUIRED COMPONENTS program_options date_time)
 INCLUDE_DIRECTORIES(SYSTEM ${Boost_INCLUDE_DIR})
 
 
@@ -30,13 +30,13 @@ INCLUDE_DIRECTORIES(SYSTEM ${Boost_INCLUDE_DIR})
 # Common libraries
 #
 
-ADD_LIBRARY(auxiliary src/auxiliary.h src/auxiliary.cpp)
+ADD_LIBRARY(auxiliary src/auxiliary.hpp src/auxiliary.cpp)
 TARGET_LINK_LIBRARIES(auxiliary ${Boost_LIBRARIES})
 
-ADD_LIBRARY(station src/station.h src/station.cpp)
+ADD_LIBRARY(station src/station.hpp src/station.cpp)
 TARGET_LINK_LIBRARIES(station ${Boost_LIBRARIES})
 
-ADD_LIBRARY(serialinterface src/serialinterface.h src/serialinterface.cpp)
+ADD_LIBRARY(serialinterface src/serialinterface.hpp src/serialinterface.cpp)
 TARGET_LINK_LIBRARIES(serialinterface auxiliary)
 
 
@@ -44,7 +44,7 @@ TARGET_LINK_LIBRARIES(serialinterface auxiliary)
 # WS8610
 #
 
-ADD_LIBRARY(ws8610 src/ws8610.h src/ws8610.cpp)
+ADD_LIBRARY(ws8610 src/ws8610.hpp src/ws8610.cpp)
 TARGET_LINK_LIBRARIES(ws8610 auxiliary station serialinterface)
 
 

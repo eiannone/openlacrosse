@@ -17,7 +17,7 @@ using namespace boost::local_time;
 #include <boost/optional.hpp>
 
 // Local includes
-#include "global.h"
+#include "global.hpp"
 
 // TODO's
 // - Don't use an abstract superclass, but provide stubs which throw an

@@ -3,7 +3,7 @@
 //
 
 // Header include
-#include "ws8610.h"
+#include "ws8610.hpp"
 
 // Platform
 #include <unistd.h>
@@ -15,7 +15,7 @@ using namespace boost::gregorian;
 #include <boost/none.hpp>
 
 // Local includes
-#include "auxiliary.h"
+#include "auxiliary.hpp"
 
 // Configurable values
 #define INIT_WAIT 500

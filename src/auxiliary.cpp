@@ -4,7 +4,7 @@
 
 
 // Header
-#include "auxiliary.h"
+#include "auxiliary.hpp"
 
 // Standard library
 #include <sstream>
