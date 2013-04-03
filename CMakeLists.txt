@@ -33,8 +33,8 @@ INCLUDE_DIRECTORIES(SYSTEM ${Boost_INCLUDE_DIR})
 FIND_PACKAGE(PCHSupport)
 IF (PCHSupport_FOUND)
         MESSAGE(STATUS "Using precompiled headers")
-        ADD_PCH(std src/std_includes.hpp)
-        ADD_PCH(boost src/boost_includes.hpp)
+        ADD_PCH(std src/pch/std.hpp)
+        ADD_PCH(boost src/pch/boost.hpp)
 ENDIF (PCHSupport_FOUND)
 
 
