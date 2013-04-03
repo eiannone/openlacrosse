@@ -7,10 +7,18 @@
 #define _OPENLACROSSE_AUXILIARY_
 
 // Standard library
+#ifdef USE_PCE
+#include "std_includes.hpp"
+#else
 #include <iostream>
+#endif
 
 // Boost
+#ifdef USE_PCE
+#include "boost_includes.hpp"
+#else
 #include <boost/integer.hpp>
+#endif
 
 
 //

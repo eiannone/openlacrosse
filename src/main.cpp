@@ -3,17 +3,25 @@
 //
 
 // Standard library
+#ifdef USE_PCE
+#include "std_includes.hpp"
+#else
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#endif
 
 // Boost
+#ifdef USE_PCE
+#include "boost_includes.hpp"
+#else
 #include <boost/program_options.hpp>
-namespace po = boost::program_options;
 #include <boost/algorithm/string.hpp>
 #include <boost/exception/all.hpp>
 #include <boost/date_time/local_time/local_time.hpp>
 #include <boost/date_time/local_time/local_time_io.hpp>
+#endif
+namespace po = boost::program_options;
 
 // Local includes
 #include "auxiliary.hpp"

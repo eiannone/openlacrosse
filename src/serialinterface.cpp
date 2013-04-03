@@ -6,15 +6,17 @@
 #include "serialinterface.hpp"
 
 // Standard library
+#ifdef USE_PCE
+#include "std_includes.hpp"
+#else
 #include <cstring>
 #include <cassert>
-
-// Platform
 #include <termios.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <errno.h>
 #include <sys/file.h>
+#endif
 
 // Local includes
 #include "auxiliary.hpp"

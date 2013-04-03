@@ -5,14 +5,22 @@
 // Header include
 #include "ws8610.hpp"
 
-// Platform
+// Standard library
+#ifdef USE_PCE
+#include "std_includes.hpp"
+#else
 #include <unistd.h>
 #include <ctime>
+#endif
 
 // Boost
+#ifdef USE_PCE
+#include "boost_includes.hpp"
+#else
 #include <boost/date_time/gregorian/gregorian.hpp>
-using namespace boost::gregorian;
 #include <boost/none.hpp>
+#endif
+using namespace boost::gregorian;
 
 // Local includes
 #include "auxiliary.hpp"
