@@ -1,7 +1,3 @@
-# TODO: PCH support for system libraries without having to add custom header
-#       (using prioritized include path?)
-
-
 IF (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
         SET(PCHSupport_FOUND TRUE)
 ENDIF()
@@ -42,7 +38,7 @@ MACRO(ADD_PCH _header)
     SET("${_target}_output" ${_output})
 ENDMACRO(ADD_PCH)
 
-MACRO(TARGET_USE_PCH _targets)
+MACRO(TARGETS_USE_PCH _targets)
     FOREACH(_target ${_targets})
         FOREACH(_header ${_headers})
             ADD_DEPENDENCIES(${_target} ${_header})
@@ -51,4 +47,4 @@ MACRO(TARGET_USE_PCH _targets)
             )
         ENDFOREACH(_header)
     ENDFOREACH(_target)
-ENDMACRO(TARGET_USE_PCH)
+ENDMACRO(TARGETS_USE_PCH)

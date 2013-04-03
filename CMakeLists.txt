@@ -51,7 +51,7 @@ TARGET_LINK_LIBRARIES(station ${Boost_LIBRARIES})
 ADD_LIBRARY(serialinterface src/serialinterface.hpp src/serialinterface.cpp)
 TARGET_LINK_LIBRARIES(serialinterface auxiliary)
 
-TARGET_USE_PCH(auxiliary station serialinterface)
+TARGETS_USE_PCH(auxiliary station serialinterface)
 
 
 #
@@ -61,7 +61,7 @@ TARGET_USE_PCH(auxiliary station serialinterface)
 ADD_LIBRARY(ws8610 src/ws8610.hpp src/ws8610.cpp)
 TARGET_LINK_LIBRARIES(ws8610 auxiliary station serialinterface)
 
-TARGET_USE_PCH(ws8610)
+TARGETS_USE_PCH(ws8610)
 
 
 #
@@ -71,4 +71,4 @@ TARGET_USE_PCH(ws8610)
 ADD_EXECUTABLE(lacrosse src/main.cpp)
 TARGET_LINK_LIBRARIES(lacrosse ws8610)
 
-TARGET_USE_PCH(lacrosse)
+TARGETS_USE_PCH(lacrosse)
