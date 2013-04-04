@@ -9,26 +9,25 @@ MACRO(ADD_PCH _pch _header)
     SET(_output "${CMAKE_CURRENT_BINARY_DIR}/${_name}.pch")
 
     # Get compiler flags
-    STRING(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" _flags_var_headerName)
-    SET(_compiler_FLAGS ${CMAKE_CXX_FLAGS})
-    SET(_compiler_FLAGS "${_compiler_FLAGS} ${${_flags_var_headerName}}")
+    STRING(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" _cxxflags_var)
+    SET(_compiler_flags "${CMAKE_CXX_FLAGS} ${${_cxxflags_var}}")
     
     # Get include directories
-    GET_DIRECTORY_PROPERTY(_directory_flags INCLUDE_DIRECTORIES)
-    FOREACH(item ${_directory_flags})
-        LIST(APPEND _compiler_FLAGS "-I${item}")
-    ENDFOREACH(item)
+    GET_DIRECTORY_PROPERTY(_include_directories INCLUDE_DIRECTORIES)
+    FOREACH(_directory ${_include_directories})
+        LIST(APPEND _compiler_flags "-I${_directory}")
+    ENDFOREACH(_directory)
 
     # Get definitions
-    GET_DIRECTORY_PROPERTY(_directory_flags DEFINITIONS)
-    LIST(APPEND _compiler_FLAGS ${_directory_flags})
+    GET_DIRECTORY_PROPERTY(_definitions DEFINITIONS)
+    LIST(APPEND _compiler_flags ${_definitions})
 
     # Generate appropriate command
-    SEPARATE_ARGUMENTS(_compiler_FLAGS)
+    SEPARATE_ARGUMENTS(_compiler_flags)
     ADD_CUSTOM_COMMAND(
         OUTPUT ${_output}
         COMMAND ${CMAKE_CXX_COMPILER}
-                                ${_compiler_FLAGS}
+                                ${_compiler_flags}
                                 -Xclang -emit-pch
                                 -o ${_output} ${_source}
         DEPENDS ${_source} )
@@ -44,7 +43,7 @@ MACRO(TARGET_USE_PCH _target _pch)
     IF (DEFINED ${_pch}_output)
         ADD_DEPENDENCIES(${_target} ${_pch})
         SET_TARGET_PROPERTIES(${_target} PROPERTIES
-            COMPILE_FLAGS "-Xclang -include-pch -Xclang ${${_pch}_output} -Winvalid-pch"
+            COMPILE_FLAGS "-Xclang -include-pch -Xclang ${${_pch}_output} -Winvalid-pch -H"
         )
     ENDIF (DEFINED ${_pch}_output)
 ENDMACRO(TARGET_USE_PCH)
