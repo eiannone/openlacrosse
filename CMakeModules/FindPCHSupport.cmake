@@ -2,7 +2,7 @@ IF (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
         SET(PCHSupport_FOUND TRUE)
 ENDIF()
 
-MACRO(ADD_PCH _target _header)
+MACRO(ADD_PCH _pch _header)
     # Get source and destination file
     GET_FILENAME_COMPONENT(_name ${_header} NAME_WE)
     SET(_source "${CMAKE_CURRENT_SOURCE_DIR}/${_header}")
@@ -32,18 +32,19 @@ MACRO(ADD_PCH _target _header)
                                 -Xclang -emit-pch
                                 -o ${_output} ${_source}
         DEPENDS ${_source} )
-    ADD_CUSTOM_TARGET(${_target} DEPENDS ${_output})
-    LIST(APPEND _headers ${_target})
-    SET("${_target}_output" ${_output})
+    ADD_CUSTOM_TARGET(${_pch} DEPENDS ${_output})
+    SET("${_pch}_output" ${_output})
 ENDMACRO(ADD_PCH)
 
-MACRO(TARGETS_USE_PCH _targets)
-    FOREACH(_target ${_targets})
-        FOREACH(_header ${_headers})
-            ADD_DEPENDENCIES(${_target} ${_header})
-            SET_TARGET_PROPERTIES(${_target} PROPERTIES
-                COMPILE_FLAGS "-Xclang -include-pch -Xclang ${${_header}_output} -Winvalid-pch"
-            )
-        ENDFOREACH(_header)
-    ENDFOREACH(_target)
-ENDMACRO(TARGETS_USE_PCH)
+MACRO(TARGET_USE_PCH _target _pch)
+    IF (${ARGC} GREATER 2})
+        MESSAGE(FATAL_ERROR "Clang only supports a single precompiled header")
+    ENDIF (${ARGC} GREATER 2})
+
+    IF (DEFINED ${_pch}_output)
+        ADD_DEPENDENCIES(${_target} ${_pch})
+        SET_TARGET_PROPERTIES(${_target} PROPERTIES
+            COMPILE_FLAGS "-Xclang -include-pch -Xclang ${${_pch}_output} -Winvalid-pch"
+        )
+    ENDIF (DEFINED ${_pch}_output)
+ENDMACRO(TARGET_USE_PCH)

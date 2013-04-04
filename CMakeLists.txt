@@ -44,14 +44,15 @@ ENDIF (PCHSupport_FOUND)
 
 ADD_LIBRARY(auxiliary src/auxiliary.hpp src/auxiliary.cpp)
 TARGET_LINK_LIBRARIES(auxiliary ${Boost_LIBRARIES})
+TARGET_USE_PCH(auxiliary boost)
 
 ADD_LIBRARY(station src/station.hpp src/station.cpp)
 TARGET_LINK_LIBRARIES(station ${Boost_LIBRARIES})
+TARGET_USE_PCH(station boost)
 
 ADD_LIBRARY(serialinterface src/serialinterface.hpp src/serialinterface.cpp)
 TARGET_LINK_LIBRARIES(serialinterface auxiliary)
-
-TARGETS_USE_PCH(auxiliary station serialinterface)
+TARGET_USE_PCH(serialinterface std)
 
 
 #
@@ -60,8 +61,7 @@ TARGETS_USE_PCH(auxiliary station serialinterface)
 
 ADD_LIBRARY(ws8610 src/ws8610.hpp src/ws8610.cpp)
 TARGET_LINK_LIBRARIES(ws8610 auxiliary station serialinterface)
-
-TARGETS_USE_PCH(ws8610)
+TARGET_USE_PCH(ws8610 boost)
 
 
 #
@@ -70,5 +70,4 @@ TARGETS_USE_PCH(ws8610)
 
 ADD_EXECUTABLE(lacrosse src/main.cpp)
 TARGET_LINK_LIBRARIES(lacrosse ws8610)
-
-TARGETS_USE_PCH(lacrosse)
+TARGET_USE_PCH(lacrosse boost)
