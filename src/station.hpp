@@ -10,10 +10,9 @@
 #include <stdexcept>
 #include <vector>
 #include <ostream>
+#include <ctime>
 
 // Boost
-#include <boost/date_time/local_time/local_time.hpp>
-using namespace boost::local_time;
 #include <boost/optional.hpp>
 
 // Local includes
@@ -51,7 +50,7 @@ public:
     };
     struct HistoryRecord
     {
-        local_date_time datetime;
+        time_t datetime;
         SensorRecord internal;
         std::vector<SensorRecord> external;
     };
@@ -65,7 +64,7 @@ public:
     // History management
     virtual HistoryRecord history(int record_no) = 0;
     virtual int history_count() = 0;
-    virtual local_date_time history_modtime() = 0;
+    virtual time_t history_modtime() = 0;
     virtual HistoryRecord history_first() = 0;
     virtual HistoryRecord history_last() = 0;
     virtual bool history_reset() = 0;

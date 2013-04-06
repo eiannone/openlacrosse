@@ -26,7 +26,7 @@ ENDIF()
 #
 
 # Boost
-FIND_PACKAGE(Boost REQUIRED COMPONENTS program_options date_time)
+FIND_PACKAGE(Boost REQUIRED COMPONENTS program_options)
 INCLUDE_DIRECTORIES(SYSTEM ${Boost_INCLUDE_DIR})
 
 # Precompiled headers

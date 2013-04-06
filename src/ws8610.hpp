@@ -10,10 +10,6 @@
 #include <vector>
 
 // Boost
-#include <boost/date_time/posix_time/posix_time.hpp>
-using namespace boost::posix_time;
-#include <boost/date_time/local_time/local_time.hpp>
-using namespace boost::local_time;
 #include <boost/optional.hpp>
 
 // Local includes
@@ -38,7 +34,7 @@ public:
     // History management
     HistoryRecord history(int record_no);
     int history_count();
-    local_date_time history_modtime();
+    time_t history_modtime();
     HistoryRecord history_first();
     HistoryRecord history_last();
     bool history_reset();
@@ -47,7 +43,7 @@ private:
     // Auxiliary
     std::vector<byte> read_safe(address location, size_t length);
     std::vector<byte> memory(address location, size_t length);
-    static ptime parse_datetime(const std::vector<byte> &data);
+    static time_t parse_datetime(const std::vector<byte> &data);
     static boost::optional<double> parse_temperature(const std::vector<byte> &data, int sensor);
     static boost::optional<unsigned int> parse_humidity(const std::vector<byte> &data, int sensor);
 

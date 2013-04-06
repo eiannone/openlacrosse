@@ -12,8 +12,6 @@
 namespace po = boost::program_options;
 #include <boost/algorithm/string.hpp>
 #include <boost/exception/all.hpp>
-#include <boost/date_time/local_time/local_time.hpp>
-#include <boost/date_time/local_time/local_time_io.hpp>
 
 // Local includes
 #include "auxiliary.hpp"
@@ -56,7 +54,7 @@ namespace Formatting
     };
 };
 
-std::string format_record(const Station::SensorRecord &record, local_date_time local_datetime, bool internal, unsigned int sensor, const std::string &format)
+std::string format_record(const Station::SensorRecord &record, time_t datetime, bool internal, unsigned int sensor, const std::string &format)
 {
     std::stringstream format_stream;
 
@@ -77,13 +75,11 @@ std::string format_record(const Station::SensorRecord &record, local_date_time l
                     formatting = Formatting::CUSTOM;
                     break;
                 default:
-                    local_time_facet *facet = new local_time_facet(format.substr(i-1, 2).c_str());
-                    std::locale current_locale("");
-                    format_stream.imbue(std::locale(current_locale, facet));
-                    format_stream << local_datetime;
-
-                    // TODO: make invalid formatting flags set the fail bit
-                    if (format_stream.fail())
+                    const std::string time_format = format.substr(i-1, 2).c_str();
+                    char time_string[256];
+                    if (strftime(time_string, 256, time_format.c_str(), localtime(&datetime)))
+                    	format_stream << time_string;
+                    else
                         throw std::runtime_error("invalid datetime formatting flag");
 
                     formatting = Formatting::RAW;
@@ -155,7 +151,7 @@ int main(int argc, char **argv)
             " %#H: humidity as percentage\n"
             " %#t: sensor type (internal or external)\n"
             " %#s: sensor number\n"
-            " %-prefixed: Boost's DateTime formatting\n")
+            " %-prefixed: strftime formatting\n")
     ;
 
     // Declare positional options

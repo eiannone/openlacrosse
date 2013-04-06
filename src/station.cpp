@@ -30,6 +30,6 @@ std::ostream & operator<<(std::ostream &os, const Station::HistoryRecord &hr)
         }
         os << ")";
     }
-        os << " at " << hr.datetime;
+        os << " at " << ctime(&hr.datetime);
     return os;
 }

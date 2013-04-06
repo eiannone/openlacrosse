@@ -8,11 +8,7 @@
 
 // Standard library
 #include <sstream>
-
-// Boost
-#include <boost/date_time/gregorian/gregorian.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-using namespace boost::posix_time;
+#include <ctime>
 
 // Null stream
 std::ostream cnull(0);
@@ -67,8 +63,17 @@ std::ostream& Logger::log(LogLevel level)
 
 std::string Logger::timestamp()
 {
-    ptime now = microsec_clock::universal_time();
-    return to_iso_extended_string(now);
+	time_t datetime;
+	time(&datetime);
+
+	std::string buffer;
+	buffer.resize(32);
+
+	size_t len = strftime(&buffer[0], buffer.length(), "%Y-%m-%dT%H:%M:%S%z", localtime(&datetime));
+	assert(len);
+	buffer.resize(len);
+
+	return buffer;
 }
 
 std::string Logger::prefix(LogLevel level)
