@@ -49,7 +49,7 @@ namespace Formatting
     enum Mode
     {
         RAW,
-        BOOST,
+        STRFTIME,
         CUSTOM
     };
 };
@@ -64,12 +64,12 @@ std::string format_record(const Station::SensorRecord &record, time_t datetime, 
         if (formatting == Formatting::RAW) {
             switch (current) {
                 case '%':
-                    formatting = Formatting::BOOST;
+                    formatting = Formatting::STRFTIME;
                     break;
                 default:
                     format_stream << current;
             }
-        } else if (formatting == Formatting::BOOST) {
+        } else if (formatting == Formatting::STRFTIME) {
             switch (current) {
                 case '#':
                     formatting = Formatting::CUSTOM;
