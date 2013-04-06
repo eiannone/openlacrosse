@@ -52,7 +52,7 @@ TARGET_USE_PCH(station boost)
 
 ADD_LIBRARY(serialinterface src/serialinterface.hpp src/serialinterface.cpp)
 TARGET_LINK_LIBRARIES(serialinterface auxiliary)
-TARGET_USE_PCH(serialinterface std)
+TARGET_USE_PCH(serialinterface boost)
 
 
 #
