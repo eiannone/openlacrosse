@@ -141,7 +141,7 @@ int main(int argc, char **argv)
             "supported models: WS8610")
         ("format,f",
             po::value<std::string>()
-                ->default_value("Sensor %#s (%#t): %#T°C %#H%% at %c"),
+                ->default_value("%#t sensor %#s: %#T°C %#H%% at %c"),
             "how to format the sensor reading output\n"
             "supported formatting flags are:\n"
             " %#T: temperature in degrees Celsius\n"
@@ -149,6 +149,8 @@ int main(int argc, char **argv)
             " %#t: sensor type (internal or external)\n"
             " %#s: sensor number\n"
             " %-prefixed: strftime formatting\n")
+		("dump",
+			"dump memory contents after everything")
     ;
 
     // Declare positional options
@@ -162,15 +164,15 @@ int main(int argc, char **argv)
             .options(desc).positional(pod).run(), vm);
     }
     catch (const std::exception &e) {
-        std::cerr << "Error " << e.what() << std::endl;
+        clog(error) << "Error " << e.what() << std::endl;
 
-        std::cout << desc << std::endl;
+        clog(info) << desc << std::endl;
         return 1;
     }
 
     // Display help
     if (vm.count("help")) {
-        std::cout << desc << std::endl;
+        clog(info) << desc << std::endl;
         return 0;
     }
 
@@ -179,9 +181,9 @@ int main(int argc, char **argv)
         po::notify(vm);
     }
     catch (const std::exception &e) {
-        std::cerr << "Invalid usage: " << e.what() << std::endl;
+        clog(error) << "Invalid usage: " << e.what() << std::endl;
 
-        std::cout << desc << std::endl;
+        clog(info) << desc << std::endl;
         return 1;
     }
 
@@ -214,7 +216,7 @@ int main(int argc, char **argv)
         }
     }
     catch (std::runtime_error const &e) {
-        std::cerr << "Error connecting to device: " << e.what() << std::endl;
+        clog(error) << "Error connecting to device: " << e.what() << std::endl;
         return 1;
     }
     
@@ -226,13 +228,17 @@ int main(int argc, char **argv)
     try {
         auto record = station->history_last();
 
-        std::cout << format_record(record.internal, record.datetime, "internal", 1, vm["format"].as<std::string>()) << std::endl;
+        clog(info) << format_record(record.internal, record.datetime, "internal", 1, vm["format"].as<std::string>()) << std::endl;
         for (size_t i = 0; i < record.external.size(); i++)
-            std::cout << format_record(record.external[i], record.datetime, "external", i+1, vm["format"].as<std::string>()) << std::endl;
+            clog(info) << format_record(record.external[i], record.datetime, "external", i+1, vm["format"].as<std::string>()) << std::endl;
     }
     catch (std::runtime_error const &e) {
-        std::cerr << "Error reading data: " << e.what() << std::endl;
+        clog(error) << "Error reading data: " << e.what() << std::endl;
         return 1;
+    }
+
+    if (vm.count("dump")) {
+
     }
 
     delete station;

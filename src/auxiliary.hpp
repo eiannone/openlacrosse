@@ -79,4 +79,7 @@ extern Logger logger;
 // Syntax sugar
 std::ostream& clog(LogLevel level);
 
+// Auxiliary functions
+std::string hexdump(void* x, unsigned long len, unsigned int w=16);
+
 #endif
