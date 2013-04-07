@@ -6,10 +6,11 @@
 #ifndef _OPENLACROSSE_GLOBAL_
 #define _OPENLACROSSE_GLOBAL_
 
-// Boost
-#include <boost/integer.hpp>
+// Standard library
+#include <cstdint>
 
 // Type definitions
+// TODO: size_t instead of custom address typedef?
 typedef uint8_t byte;
 typedef uint16_t address;
 

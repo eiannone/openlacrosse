@@ -238,7 +238,8 @@ int main(int argc, char **argv)
     }
 
     if (vm.count("dump")) {
-
+    	std::vector<byte> memory = station->memory_dump();
+    	clog(info) << hexdump(memory.data(), memory.size(), 16);
     }
 
     delete station;

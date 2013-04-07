@@ -23,6 +23,7 @@
 //   UnsupportedException
 // - UnsupportedException should be thrown when trying to access unsupported
 //   values, such as rain or wind, due to the format string requesting them.
+// - Const correctness
 
 
 //
@@ -68,6 +69,9 @@ public:
     virtual HistoryRecord history_first() = 0;
     virtual HistoryRecord history_last() = 0;
     virtual bool history_reset() = 0;
+
+    // Other
+    virtual std::vector<byte> memory_dump() = 0;
 };
 
 // Operators

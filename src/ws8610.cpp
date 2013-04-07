@@ -217,11 +217,42 @@ bool WS8610::history_reset()
     return _iface.write_data(0x0009, std::vector<byte>{0x00, 0x00});
 }
 
+//
+// Other
+//
+
+std::vector<byte> WS8610::memory_dump()
+{
+	// TODO: optimize this
+	std::vector<byte> memory(HISTORY_END_LOCATION, 0);
+
+	// Read the memory in 8-byte chunks
+	for (address i = 0; i < HISTORY_END_LOCATION; i += 8) {
+		size_t chunksize = 8;
+		if (i+chunksize > HISTORY_END_LOCATION)
+			chunksize = HISTORY_END_LOCATION - i;
+
+		std::vector<byte> chunk = _iface.read_data(i, chunksize);
+		if (chunk.size() == 0) {
+			clog(warning) << "Could not dump memory at address 0x"
+					<< std::hex << i << std::endl;
+			continue;
+		}
+
+		assert(chunk.size() == chunksize);
+		for (unsigned int j = 0; j < chunksize; j++)
+			memory[i] = chunk[j];
+	}
+
+	return memory;
+}
+
 
 //
 // Auxiliary
 //
 
+// TODO: move into SerialInterface
 std::vector<byte> WS8610::read_safe(address location, size_t length)
 {
     std::vector<byte> data, data2;

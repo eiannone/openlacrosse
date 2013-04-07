@@ -8,7 +8,6 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/exception/all.hpp>
-#include <boost/integer.hpp>
 #include <boost/none.hpp>
 #include <boost/optional.hpp>
 #include <boost/program_options.hpp>

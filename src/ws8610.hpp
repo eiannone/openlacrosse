@@ -41,6 +41,9 @@ public:
     HistoryRecord history_last();
     bool history_reset();
 
+    // Other
+    std::vector<byte> memory_dump();
+
 private:
     // Auxiliary
     std::vector<byte> read_safe(address location, size_t length);

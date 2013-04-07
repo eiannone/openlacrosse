@@ -7,6 +7,7 @@
 #define _OPENLACROSSE_PCH_STD_
 
 #include <cassert>
+#include <cstdint>
 #include <cstring>
 #include <ctime>
 #include <errno.h>
