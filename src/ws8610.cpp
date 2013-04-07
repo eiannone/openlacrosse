@@ -142,6 +142,11 @@ int WS8610::history_count()
     auto data = read_safe(0x0009, 2);
     return (data[0] >> 4) * 1000 + (data[1] & 0x0F) * 100
         + (data[0] >> 4) * 10 + (data[0] & 0x0F);
+
+    // C#: (data[0] >> 4) * 1000 + (data[1] & 0x0F) * 100 + (data[0] >> 4) * 10 + (data[0] & 0x0F);
+    // C:  ((data[0] >> 4) * 10 + (data[0] & 0xF) +(data[1] >> 4) * 1000 + (data[1] & 0xF) * 100)
+
+    return ((data[0] >> 4) * 10 + (data[0] & 0xF) +(data[1] >> 4) * 1000 + (data[1] & 0xF) * 100);
 }
 
 time_t WS8610::history_modtime()
@@ -150,25 +155,19 @@ time_t WS8610::history_modtime()
     if (data.size() != 6)
         throw ProtocolException("Invalid datetime data received");
 
-    // TODO: merge with parse_datetime, if possible
-    int min = (data[0] >> 4) * 10 + (data[0] & 0x0F);
-    int hour = (data[1] >> 4) * 10 + (data[1] & 0x0F);
-    int mday = (data[2] >> 4) + ((data[3] & 0x0F) * 10);
-    int mon = (data[3] >> 4) + (data[4] & 0x0F) * 10;
-    int year = 2000 + (data[4] >> 4) + (data[5] & 0xF) * 10;
-
     time_t rawtime;
     time(&rawtime);
 
     struct tm *timeinfo;
     timeinfo = localtime(&rawtime);
 
-    timeinfo->tm_year = year - 1900;
-    timeinfo->tm_mon = mon - 1;
-    timeinfo->tm_mday = mday;
-    timeinfo->tm_hour = hour;
-    timeinfo->tm_min = min;
     timeinfo->tm_isdst = -1;
+    timeinfo->tm_sec  = 0;
+    timeinfo->tm_min  = (data[0] >> 4) * 10 + (data[0] & 0xF);
+    timeinfo->tm_hour = (data[1] >> 4) * 10 + (data[1] & 0xF);
+    timeinfo->tm_mday = (data[2] >> 4) + (data[3] & 0xF) * 10;
+    timeinfo->tm_mon  = (data[3] >> 4) + (data[4] & 0xF) * 10 - 1;
+    timeinfo->tm_year = (data[4] >> 4) + (data[5] & 0xF) * 10 + 100;
 
     rawtime = mktime(timeinfo);
     if (rawtime == -1)
@@ -213,6 +212,8 @@ WS8610::HistoryRecord WS8610::history_last()
 /// <returns>true if success</returns>
 bool WS8610::history_reset()
 {
+	// C#: 0x00, 0x00
+	// C:  0x80, 0x02
     return _iface.write_data(0x0009, std::vector<byte>{0x00, 0x00});
 }
 
@@ -269,24 +270,19 @@ std::vector<byte> WS8610::memory(address location, size_t length)
 
 time_t WS8610::parse_datetime(const std::vector<byte> &data)
 {
-    int min = (data[0] >> 4) * 10 + (data[0] & 0x0F);
-    int hour = (data[1] >> 4) * 10 + (data[1] & 0x0F);
-    int mday = (data[2] >> 4) * 10 + (data[2] & 0x0F);
-    int mon = (data[3] >> 4) * 10 + (data[3] & 0x0F);
-    int year = (data[4] >> 4) * 10 + (data[4] & 0x0F) + 2000;
-
     time_t rawtime;
     time(&rawtime);
 
     struct tm *timeinfo;
     timeinfo = localtime(&rawtime);
 
-    timeinfo->tm_year = year - 1900;
-    timeinfo->tm_mon = mon - 1;
-    timeinfo->tm_mday = mday;
-    timeinfo->tm_hour = hour;
-    timeinfo->tm_min = min;
     timeinfo->tm_isdst = -1;
+    timeinfo->tm_sec  = 0;
+    timeinfo->tm_min  = (data[0] >> 4) * 10 + (data[0] & 0xF);
+    timeinfo->tm_hour = (data[1] >> 4) * 10 + (data[1] & 0xF);
+    timeinfo->tm_mday = (data[2] >> 4) * 10 + (data[2] & 0xF);
+    timeinfo->tm_mon  = (data[3] >> 4) * 10 + (data[3] & 0xF) - 1;
+    timeinfo->tm_year = (data[4] >> 4) * 10 + (data[4] & 0xF) + 100;
 
     rawtime = mktime(timeinfo);
     if (rawtime == -1)

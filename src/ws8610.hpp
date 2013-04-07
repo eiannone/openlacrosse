@@ -17,6 +17,8 @@
 #include "station.hpp"
 #include "serialinterface.hpp"
 
+// TODO: min/max, dewpoint
+
 
 //
 // Module definitions
