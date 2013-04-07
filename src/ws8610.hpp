@@ -32,7 +32,7 @@ public:
     unsigned int external_sensors();
 
     // History management
-    HistoryRecord history(int record_no);
+    HistoryRecord history(unsigned int record_no);
     int history_count();
     time_t history_modtime();
     HistoryRecord history_first();

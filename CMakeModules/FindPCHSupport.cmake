@@ -43,7 +43,7 @@ MACRO(TARGET_USE_PCH _target _pch)
     IF (DEFINED ${_pch}_output)
         ADD_DEPENDENCIES(${_target} ${_pch})
         SET_TARGET_PROPERTIES(${_target} PROPERTIES
-            COMPILE_FLAGS "-Xclang -include-pch -Xclang ${${_pch}_output} -Winvalid-pch -H"
+            COMPILE_FLAGS "-Xclang -include-pch -Xclang ${${_pch}_output} -Winvalid-pch"
         )
     ENDIF (DEFINED ${_pch}_output)
 ENDMACRO(TARGET_USE_PCH)

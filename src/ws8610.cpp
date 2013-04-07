@@ -102,7 +102,7 @@ unsigned int WS8610::external_sensors()
 // History management
 //
 
-WS8610::HistoryRecord WS8610::history(int record_no)
+WS8610::HistoryRecord WS8610::history(unsigned int record_no)
 {
     while (record_no >= _max_records)
         record_no -= _max_records;
@@ -124,7 +124,7 @@ WS8610::HistoryRecord WS8610::history(int record_no)
 
     SensorRecord internal{parse_temperature(record, 0), parse_humidity(record, 0)};
     std::vector<SensorRecord> external;
-    for (auto s = 1; s <= _external_sensors; s++)
+    for (unsigned int s = 1; s <= _external_sensors; s++)
         external.push_back(SensorRecord(parse_temperature(record, s), parse_humidity(record, s)));
 
     HistoryRecord hr{datetime, internal, external};
@@ -171,7 +171,8 @@ time_t WS8610::history_modtime()
     timeinfo->tm_isdst = -1;
 
     rawtime = mktime(timeinfo);
-    // TODO: check for error output (-1)
+    if (rawtime == -1)
+    	throw new ProtocolException("Unparseable datetime data received");
 
     return rawtime;
 }
@@ -185,9 +186,9 @@ WS8610::HistoryRecord WS8610::history_last()
 {
     auto first_rec = history(0);
     time_t dt_last = history_modtime();
-    int difference = dt_last - first_rec.datetime;
-    // TODO: time_t is not guaranteed to be a Unixtime
-    int tot_records = 1 + difference / 300;
+    std::cout << "Last record: " << dt_last << std::endl;
+    double difference = difftime(dt_last, first_rec.datetime);
+    int tot_records = 1 + int(difference / 300);
     clog(trace) << "Total amount of records is " << tot_records << std::endl;
 
     // Try to see if record (n+1) is valid
@@ -225,7 +226,7 @@ std::vector<byte> WS8610::read_safe(address location, size_t length)
 {
     std::vector<byte> data, data2;
 
-    int j;
+    unsigned int j;
     for (j = 0; j < MAX_READ_RETRIES; j++)
     {
         _iface.start_sequence();
@@ -240,7 +241,7 @@ std::vector<byte> WS8610::read_safe(address location, size_t length)
         }
 
         // If we read more than 10 bytes we should never receive only 0's
-        int i = 0;
+        unsigned int i = 0;
         if (length > 10)
             for (; data[i] == 0 && i < length; i++)
             { }
@@ -289,7 +290,8 @@ time_t WS8610::parse_datetime(const std::vector<byte> &data)
     timeinfo->tm_isdst = -1;
 
     rawtime = mktime(timeinfo);
-    // TODO: check for error output (-1)
+    if (rawtime == -1)
+    	throw new ProtocolException("Unparseable datetime data received");
 
     return rawtime;
 }

@@ -62,7 +62,7 @@ public:
     virtual unsigned int external_sensors() = 0;
 
     // History management
-    virtual HistoryRecord history(int record_no) = 0;
+    virtual HistoryRecord history(unsigned int record_no) = 0;
     virtual int history_count() = 0;
     virtual time_t history_modtime() = 0;
     virtual HistoryRecord history_first() = 0;
