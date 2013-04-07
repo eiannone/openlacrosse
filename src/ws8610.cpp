@@ -186,7 +186,6 @@ WS8610::HistoryRecord WS8610::history_last()
 {
     auto first_rec = history(0);
     time_t dt_last = history_modtime();
-    std::cout << "Last record: " << dt_last << std::endl;
     double difference = difftime(dt_last, first_rec.datetime);
     int tot_records = 1 + int(difference / 300);
     clog(trace) << "Total amount of records is " << tot_records << std::endl;

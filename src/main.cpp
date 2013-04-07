@@ -54,7 +54,7 @@ namespace Formatting
     };
 };
 
-std::string format_record(const Station::SensorRecord &record, time_t datetime, bool internal, unsigned int sensor, const std::string &format)
+std::string format_record(const Station::SensorRecord &record, time_t datetime, std::string type, unsigned int sensor, const std::string &format)
 {
     std::stringstream format_stream;
 
@@ -99,10 +99,7 @@ std::string format_record(const Station::SensorRecord &record, time_t datetime, 
                         format_stream << "-";
                     break;
                 case 't':
-                    if (internal)
-                        format_stream << "internal";
-                    else
-                        format_stream << "external";
+                	format_stream << type;
                     break;
                 case 's':
                     format_stream << sensor;
@@ -229,9 +226,9 @@ int main(int argc, char **argv)
     try {
         auto record = station->history_last();
 
-        std::cout << format_record(record.internal, record.datetime, true, 0, vm["format"].as<std::string>()) << std::endl;
+        std::cout << format_record(record.internal, record.datetime, "internal", 1, vm["format"].as<std::string>()) << std::endl;
         for (size_t i = 0; i < record.external.size(); i++)
-            std::cout << format_record(record.external[i], record.datetime, false, i+1, vm["format"].as<std::string>()) << std::endl;
+            std::cout << format_record(record.external[i], record.datetime, "external", i+1, vm["format"].as<std::string>()) << std::endl;
     }
     catch (std::runtime_error const &e) {
         std::cerr << "Error reading data: " << e.what() << std::endl;
