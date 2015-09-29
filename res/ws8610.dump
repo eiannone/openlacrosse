@@ -5,16 +5,19 @@ Address: 0001 - Data: 11	LSN: ones of hours MSN: tens of hours
 Address: 0002 - Data: 27	LSN: day of week (sun) MSN: ones of day of month
 Address: 0003 - Data: 11	LSN: tens of dayof month MSN: ones of months
 Address: 0004 - Data: 61	LSN: tens of month MSN-ones of year
-Address: 0005 - Data: 00	LSN:tens of year MSN: ?
-
+Address: 0005 - Data: 00	LSN:tens of year MSN: hundreds of year
+                                (Note: this date/time seems to be updated every 10 minutes, not 5)
+                                
 Address: 0006 - Data: 00	?
 Address: 0007 - Data: FF	?
 
 Address: 0008 - Data: 01	Channels active
-Address: 0009 - Data: 13	No of stored data history (just total amount - not a pointer when memory loops)
-Address: 000A - Data: 00	number data history - hundreds/thousands?
+
+                                No of stored data history (just total amount - not a pointer when memory loops)
+Address: 0009 - Data: 13	LSN: ones of number MSN: tens of number
+Address: 000A - Data: 00	LSN: hundreds of number MSN: thousands of number
 Address: 000B - Data: 00	- something about looping? Changes to 04 after 1 loop
-Address: 000C - Data: 01	LSN: Channels recorded in history MSN: something about looping
+Address: 000C - Data: 01	LSN: Channels recorded in history MSN: something about looping?
 
 Address: 000D - Data: FF	?
 Address: 000E - Data: FF	?
@@ -85,7 +88,7 @@ Address: 004C - Data: A2
 Address: 004D - Data: 9A
 Address: 004E - Data: 00
 Address: 004F - Data: 00
-Address: 0050 - Data: 07	?
+Address: 0050 - Data: 07	?  (sometimes is 0F)
 
 Address: 0051 - Data: AB	- Timestamp of last record downloaded by Data Recorder Software
 Address: 0052 - Data: AA	| The timestamp is expressed as number of ticks since 
@@ -129,6 +132,14 @@ Address: 0070 - Data: FA	RH2 ?
 
 Next data point...
 
-Address: 00XX - Data: FF	First byte of data point to FF means end of history. Used as a delimiter when
+Address: XXXX - Data: FF	First byte of data point to FF means end of history. Used as a delimiter when
 				rolling history
 
+Address: 7FF8 - Data: FF	?
+Address: 7FF9 - Data: FF	?
+Address: 7FFA - Data: FF	?
+Address: 7FFB - Data: 5A	?
+Address: 7FFC - Data: 3F	?
+Address: 7FFD - Data: FF	?
+Address: 7FFE - Data: FF	?
+Address: 7FFF - Data: FF	?
